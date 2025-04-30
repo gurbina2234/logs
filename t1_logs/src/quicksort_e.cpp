@@ -4,7 +4,6 @@
 #include <ctime>
 #include <random>
 #include <set>
-#include <vector>
 
 // arreglo de numeros para trabajar en memoria principal -> buffer
 void readBlock(const std::string &filename, size_t posicion, size_t B, std::vector<int64_t> &buffer) {
@@ -56,7 +55,7 @@ std::vector<int64_t> randomInterval(const std::string &filename, size_t N, size_
      // elegir a-1 elementos random del bloque para que sean pivotes
      size_t finalSize = buffer.size();
      std::set<int64_t> pivotsSet;
-     for (size_t i = 0; i < numPivots; ++i) {
+     while (pivotsSet.size() < numPivots && finalSize > 0) {
           size_t randomIndex = rand() % finalSize;
           pivotsSet.insert(buffer[randomIndex]);
      }
