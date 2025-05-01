@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <random>
 #include <vector>
+#include <string>
 #include <iostream>
 
 void generateSequences(int64_t N, const std::string &filename) {
