@@ -1,4 +1,4 @@
-#include "generateSequences.hpp"
+#include "../include/generateSequences.hpp"
 #include <algorithm>
 #include <fstream>
 #include <cstdlib>
@@ -85,7 +85,7 @@ void generateSequences(int64_t N, const std::string &filename) {
   std::cout << "Archivo generado: " << filename << " (" << totalEnteros << " enteros, " << N / (1024 * 1024) << " MB)" << std::endl;
 }
 
- int main() {
+int main() {
     const size_t MB = 50 * 1024 * 1024;
 
     for (int m = 4; m <= 60; m += 4) {
