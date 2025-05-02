@@ -29,7 +29,7 @@ int comparar_64(const void *a, const void *b) {
     return (a > b) - (a < b); //1 si a>b, -1 si a<b
 }
 
-void generar_middle_files(char *datos_desordenados) {
+void generar_middle_files(char *datos_desordenados, size_t *cantidad_mid_files) {
     FILE *f_in = fopen(datos_desordenados, "rb");
     if (!f_in) {
         perror("abrir datos");
@@ -83,6 +83,37 @@ void generar_middle_files(char *datos_desordenados) {
         fclose(f_out);
     }
 
+    *cantidad_mid_files = mid_num;
     free(buffer);
     fclose(f_in);
+}
+
+//llena y/o actualiza el buffer del middle file
+void update_mf_buffer(Mid *mid) {
+    if (mid->terminado) return;
+
+    size_t leidos = fread(mid->buffer, B_BYTES, 1, mid->archivo);
+    lecturas_escrituras++;
+
+    if (leidos == 0) {
+        mid->terminado = true;
+        return;
+    }
+
+    mid->usados += NUMS_POR_BLOQUE;
+}
+
+int seleccionar_minimo(Mid *mids, size_t cantidad_mids) {
+    int idx = -1;
+    int64_t val_min = 0;
+
+    //compara todos los primeros elementos de cada buffer
+    for (int i; i < cantidad_mids; i++) {
+        if (mids[i].terminado || mids[i].pos >= mids[i].usados) continue;
+        int actual = mids[i].buffer[mids[i].pos];
+        if (idx == -1 || actual < val_min) {
+            val_min = actual;
+            idx = i;
+        }
+    }
 }
