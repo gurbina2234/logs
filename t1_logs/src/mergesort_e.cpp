@@ -100,7 +100,8 @@ void update_mf_buffer(Mid *mid) {
         return;
     }
 
-    mid->usados += NUMS_POR_BLOQUE;
+    mid->usados = NUMS_POR_BLOQUE;
+    mid->pos = 0; //reiniciamos su posicion
 }
 
 int seleccionar_minimo(Mid *mids, size_t cantidad_mids) {
@@ -108,7 +109,7 @@ int seleccionar_minimo(Mid *mids, size_t cantidad_mids) {
     int64_t val_min = 0;
 
     //compara todos los primeros elementos de cada buffer
-    for (int i; i < cantidad_mids; i++) {
+    for (int i = 0; i < cantidad_mids; i++) {
         if (mids[i].terminado || mids[i].pos >= mids[i].usados) continue;
         int actual = mids[i].buffer[mids[i].pos];
         if (idx == -1 || actual < val_min) {
@@ -116,4 +117,61 @@ int seleccionar_minimo(Mid *mids, size_t cantidad_mids) {
             idx = i;
         }
     }
+
+    return idx;
+}
+
+void merge_middle_files(size_t cantidad, int cuantosM) {
+    Mid mids[ARIDAD];
+    int64_t buffer_a_disco[NUMS_POR_BLOQUE]; //se escribe 1 bloque a la vez
+    size_t elementos_escritos = 0;
+
+    //debug
+    if (cantidad > ARIDAD) {
+        printf("cantidad: %zu | aridad: %d", cantidad, ARIDAD);
+        exit(1);
+    }
+
+    for (int i = 0; i < cantidad; i++) {
+        char nombre_mid[64];
+        sprintf(nombre_mid, "mid_%d.bin", i);
+        mids[i].archivo = fopen(nombre_mid, "rb");
+        if (!mids[i].archivo) {
+            perror("abrir mid file");
+            exit(1);
+        }
+        update_mf_buffer(&mids[i]);
+    }
+
+    char nombre_archivo_ordenado[64];
+    sprintf(nombre_archivo_ordenado, "orden_%dMB", cuantosM);
+    FILE *f_out = fopen(nombre_archivo_ordenado, "wb");
+    if (!f_out) {
+        perror("crear orden final");
+        exit(1);
+    }
+
+    while (1) {
+        int idx = seleccionar_minimo(mids, cantidad);
+        if (idx == -1) break; //todos estan vacios
+
+        buffer_a_disco[elementos_escritos++] = mids[idx].buffer[mids[idx].pos++]; //copio el menor primer elemento y muevo la posicion de su puntero
+
+        if (elementos_escritos == NUMS_POR_BLOQUE) {
+            fwrite(buffer_a_disco, B_BYTES, 1, f_out);
+            lecturas_escrituras++;
+            elementos_escritos = 0;
+        }
+
+        if (mids[idx].pos >= mids[idx].usados) { //agotamos los elementos del buffer
+            update_mf_buffer(&mids[idx]); //actualizamos los valores de su buffer
+        }
+    }
+
+    //cerramos los archivos
+    for (int i = 0; i < cantidad; i++) {
+        fclose(mids[i].archivo);
+    }
+
+    fclose(f_out);
 }
