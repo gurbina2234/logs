@@ -5,7 +5,6 @@
 #include <iostream>
 #include <string>
 #include <vector>
-
 //crear funciones que lean bloques
 //crear funciones que escriban bloques
 //elegir a-1 pivotes aleatorios para separar el arreglo en a partes, quicksort
