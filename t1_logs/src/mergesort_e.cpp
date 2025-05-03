@@ -121,15 +121,84 @@ int seleccionar_minimo(Mid *mids, size_t cantidad_mids) {
     return idx;
 }
 
+void merge_cant_sobre_a(size_t cantidad, int cuociente, int residuo, int cuantosM) {
+    for (int index = 0; index < cuociente; index++) {
+        Mid mids[ARIDAD];
+        int64_t buffer_a_disco[NUMS_POR_BLOQUE];
+        size_t elementos_escritos = 0;
+        
+        int offset = index * ARIDAD;
+        for (int i = 0; i < ARIDAD; i++) {
+            int idx_archivo = i + offset;
+
+            char nombre_archivo[64];
+            sprintf(nombre_archivo, "mid_%d.bin", idx_archivo);
+            mids[i].archivo = fopen(nombre_archivo, "rb");
+
+            if (!mids[i].archivo) {
+                perror("abrir mid file");
+                exit(1);
+            }
+
+            mids[i].pos = 0;
+            mids[i].usados = 0;
+            mids[i].terminado = false;
+            update_mf_buffer(&mids[i]);
+        }
+
+        char nombre_mf_ordenado[64];
+        sprintf(nombre_mf_ordenado, "superior_mid_%dM_%d.bin", cuantosM, index);
+        FILE *f_out = fopen(nombre_mf_ordenado, "wb");
+        if (!f_out) {
+            perror("crear superior mid");
+            exit(1);
+        }
+
+        while (1) {
+            int idx = seleccionar_minimo(mids, ARIDAD);
+            if (idx == -1) break;
+
+            buffer_a_disco[elementos_escritos++] = mids[idx].buffer[mids[idx].pos++];
+
+            if (elementos_escritos == NUMS_POR_BLOQUE) {
+                fwrite(buffer_a_disco, B_BYTES, 1, f_out);
+                lecturas_escrituras++;
+                elementos_escritos = 0;
+            }
+
+            if (mids[idx].pos > mids[idx].usados) {
+                update_mf_buffer(&mids[idx]);
+            }
+        }
+
+        for (int i = 0; i < ARIDAD; i++) {
+            fclose(mids[i].archivo);
+        }
+
+        fclose(f_out);
+    }
+
+    if (residuo > 0) {
+        Mid mids[residuo];
+        int64_t buffer_a_disco[NUMS_POR_BLOQUE];
+        size_t elementos_escritos = 0;
+
+        int offset = cuociente * ARIDAD;
+        
+    }
+}
+
 void merge_middle_files(size_t cantidad, int cuantosM) {
     Mid mids[ARIDAD];
     int64_t buffer_a_disco[NUMS_POR_BLOQUE]; //se escribe 1 bloque a la vez
     size_t elementos_escritos = 0;
 
-    //debug
     if (cantidad > ARIDAD) {
         printf("cantidad: %zu | aridad: %d", cantidad, ARIDAD);
-        exit(1);
+        int cuociente = cantidad / ARIDAD;
+        int residuo = cantidad % ARIDAD;
+        merge_cant_sobre_a(cantidad, cuociente, residuo, cuantosM);
+        return;
     }
 
     for (int i = 0; i < cantidad; i++) {
@@ -144,7 +213,7 @@ void merge_middle_files(size_t cantidad, int cuantosM) {
     }
 
     char nombre_archivo_ordenado[64];
-    sprintf(nombre_archivo_ordenado, "orden_%dMB", cuantosM);
+    sprintf(nombre_archivo_ordenado, "orden_%dMB.bin", cuantosM);
     FILE *f_out = fopen(nombre_archivo_ordenado, "wb");
     if (!f_out) {
         perror("crear orden final");
