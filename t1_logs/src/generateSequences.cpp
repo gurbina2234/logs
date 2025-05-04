@@ -11,8 +11,8 @@ void generateSequences(int64_t N, const std::string &filename) {
   //Definición de tamaño de buffer
   const size_t BufferMB = 100;
   const size_t BufferSize = (BufferMB * 1024 * 1024) / sizeof(int64_t);
-  int64_t totalEnteros = N / sizeof(int64_t);
-  int64_t porSecuencia = totalEnteros / 5;
+  int64_t porSecuencia = N / sizeof(int64_t);
+  int64_t totalEnteros = 5 * porSecuencia;
 
   // Se crean 5 archivos temporales para almacenar secuencias y despues escribirlas en los archivos reales
   std::vector<std::string> temp = {
@@ -23,7 +23,7 @@ void generateSequences(int64_t N, const std::string &filename) {
   std::mt19937_64 gen(std::random_device{}());
   std::uniform_int_distribution<int64_t> dist(INT64_MIN, INT64_MAX);
 
-  // Generar 5 secuencias de tamaño N cada una
+  // Generar 5 secuencias de tamaño del buffer cada una y escribir en archivos temporales
   for (int i = 0; i < 5; ++i) {
     std::ofstream out(temp[i], std::ios::binary);
     std::vector<int64_t> buffer;
@@ -82,7 +82,7 @@ void generateSequences(int64_t N, const std::string &filename) {
     std::remove(f.c_str());
   }
 
-  std::cout << "Archivo generado: " << filename << " (" << totalEnteros << " enteros, " << N / (1024 * 1024) << " MB)" << std::endl;
+  std::cout << "Archivo generado: " << filename << " (" << totalEnteros << " enteros, " << 5 * N / (1024 * 1024) << " MB)" << std::endl;
 }
 
 int main() {
