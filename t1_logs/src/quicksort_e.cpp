@@ -54,7 +54,7 @@ std::vector<int64_t> randomInterval(const std::string &filename, size_t N, size_
      
      // crear intentos para evitar que se tenga un set de pivotes incorrecto
      std::set<int64_t> candidates;
-     size_t maxTries = 10;  
+     size_t maxTries = 2;  
  
      for (size_t tries = 0; tries < maxTries && candidates.size() < numPivots; ++tries) {
          size_t randomBlock = rand() % numBlocks;
@@ -100,11 +100,7 @@ void quicksortExternal(const std::string &filename, size_t N, size_t B, size_t M
           std::cout << "CASO BASE!! Ordenando " << N << " elementos en memoria principal.\n";
           std::vector<int64_t> uploadMemory;
           //leer de a bloques el archivo binario 
-          for (size_t i = 0; i < numBlocks; ++i) {
-               std::vector<int64_t> valuesBlock;
-               readBlock(filename, i, B, valuesBlock);
-               uploadMemory.insert(uploadMemory.end(), valuesBlock.begin(), valuesBlock.end());
-          }
+          readAllMemory(filename, 0, B, numBlocks, uploadMemory);
           //ordenar el arreglo completo en memoria principal
           std::sort(uploadMemory.begin(), uploadMemory.end());
           //escribir de a bloques de tamaño B
