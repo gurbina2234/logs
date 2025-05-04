@@ -6,8 +6,13 @@
 #include <set>
 
 size_t readnwrite = 0;
+size_t B = 4096; 
+size_t blockSize = B / sizeof(int64_t);
+size_t M = 50000000 / sizeof(int64_t);
+size_t blocksMemory = (M + blockSize - 1) / blockSize;
+size_t a = 32;
 
-void readBlock(const std::string &filename, size_t posicion, size_t B, std::vector<int64_t> &buffer) {
+void readBlock(const std::string &filename, size_t posicion, std::vector<int64_t> &buffer) {
      std::ifstream file(filename, std::ios::binary);
      if (!file) {
           std::cerr << "Error opening file: " << filename << std::endl;
@@ -15,7 +20,6 @@ void readBlock(const std::string &filename, size_t posicion, size_t B, std::vect
      }
 
      file.seekg(posicion * B, std::ios::beg);
-     size_t blockSize = B / sizeof(int64_t);
      buffer.resize(blockSize); 
      file.read(reinterpret_cast<char *>(buffer.data()), B);
      size_t bytesRead = file.gcount();
@@ -27,7 +31,7 @@ void readBlock(const std::string &filename, size_t posicion, size_t B, std::vect
 }
  
  
-void writeBlock(const std::string &filename, size_t posicion, size_t B, std::vector<int64_t> &buffer) {
+void writeBlock(const std::string &filename, size_t posicion, std::vector<int64_t> &buffer) {
      std::fstream file(filename, std::ios::binary | std::ios::in | std::ios::out); // poner ios in y ios out sino se puede reescribir todo el archivo
      if (!file.is_open()) {
           //crear achivo vacio
@@ -46,9 +50,8 @@ void writeBlock(const std::string &filename, size_t posicion, size_t B, std::vec
      file.close();
 }
  
-std::vector<int64_t> randomInterval(const std::string &filename, size_t N, size_t B, size_t a) {
+std::vector<int64_t> randomInterval(const std::string &filename, size_t N, size_t a) {
      std::vector<int64_t> buffer;
-     size_t blockSize = B / sizeof(int64_t);
      size_t numBlocks = (N + blockSize - 1) / blockSize;
      size_t numPivots = a - 1;
      
@@ -59,7 +62,7 @@ std::vector<int64_t> randomInterval(const std::string &filename, size_t N, size_
      for (size_t tries = 0; tries < maxTries && candidates.size() < numPivots; ++tries) {
          size_t randomBlock = rand() % numBlocks;
          std::vector<int64_t> tempBuffer;
-         readBlock(filename, randomBlock, B, tempBuffer);
+         readBlock(filename, randomBlock, tempBuffer);
          for (auto val : tempBuffer) {
              candidates.insert(val);
              if (candidates.size() >= numPivots) break;
@@ -83,44 +86,38 @@ std::vector<int64_t> randomInterval(const std::string &filename, size_t N, size_
 }
 
 //funcion que lee un archivo binario de tamaño A en B bloques usando readBlock
-void readAllMemory(const std::string &filename,size_t startBlock, size_t B, size_t numBlocks, std::vector<int64_t> &buffer) {
-     size_t blockSize = B / sizeof(int64_t);
+void readAllMemory(const std::string &filename,size_t startBlock, size_t numBlocks, std::vector<int64_t> &buffer) {
      for (size_t i = 0; i < numBlocks; ++i) {
           std::vector<int64_t> tempBuffer;
-          readBlock(filename, startBlock + i, B, tempBuffer);
+          readBlock(filename, startBlock + i, tempBuffer);
           buffer.insert(buffer.end(), tempBuffer.begin(), tempBuffer.end());
      }
 }
 
-void quicksortExternal(const std::string &filename, size_t N, size_t B, size_t M, size_t a, size_t depth = 0) {
-     size_t blockSize = B / sizeof(int64_t); 
+void quicksortExternal(const std::string &filename, size_t N, size_t a, size_t depth = 0) {
      size_t numBlocks = (N + blockSize - 1) / blockSize;
-     size_t blocksMemory = (M + blockSize - 1) / blockSize; // cantidad de bloques que caben en memoria principal
      if (N <= M) {
           std::cout << "CASO BASE!! Ordenando " << N << " elementos en memoria principal.\n";
           std::vector<int64_t> uploadMemory;
-          //leer de a bloques el archivo binario 
-          readAllMemory(filename, 0, B, numBlocks, uploadMemory);
-          //ordenar el arreglo completo en memoria principal
+          readAllMemory(filename, 0, numBlocks, uploadMemory);
           std::sort(uploadMemory.begin(), uploadMemory.end());
-          //escribir de a bloques de tamaño B
           for(size_t i = 0; i < numBlocks; ++i) {
                size_t start = i * blockSize;
                size_t end = std::min(start + blockSize, N);
                std::vector<int64_t> valuesBlock(uploadMemory.begin() + start, uploadMemory.begin() + end);
-               writeBlock(filename, i, B, valuesBlock);
+               writeBlock(filename, i, valuesBlock);
           }
           return;
      }
      std::cout << "CASO RECURSIVO!! Ordenando " << N << " elementos en disco.\n";
-     std::vector<int64_t> pivots = randomInterval(filename, N, B, a);
+     std::vector<int64_t> pivots = randomInterval(filename, N, a);
      std::vector<std::vector<int64_t>> subArrays(a);
      std::vector<size_t> blockCounters(a, 0);
      for (size_t i = 0; i < numBlocks; i += blocksMemory) {
           std::vector<int64_t> memoryBuffer;
           size_t blockstoRead = std::min(blocksMemory, numBlocks - i);
           //leer bloques en memoria principal
-          readAllMemory(filename, i, B, blockstoRead, memoryBuffer);
+          readAllMemory(filename, i, blockstoRead, memoryBuffer);
           //clasificar los elementos leidos en los subarreglos
           for (size_t k = 0; k < memoryBuffer.size(); ++k) {
                int64_t num = memoryBuffer[k];
@@ -132,7 +129,7 @@ void quicksortExternal(const std::string &filename, size_t N, size_t B, size_t M
                subArrays[j].push_back(num);
                if (subArrays[j].size() == blockSize) {
                     std::string subFileName = "temp_" + std::to_string(depth) + "_p" + std::to_string(j) + ".bin";
-                    writeBlock(subFileName, blockCounters[j], B, subArrays[j]);
+                    writeBlock(subFileName, blockCounters[j], subArrays[j]);
                     subArrays[j].clear();
                     blockCounters[j]++;
                }
@@ -143,7 +140,7 @@ void quicksortExternal(const std::string &filename, size_t N, size_t B, size_t M
      for (size_t j = 0; j < a; ++j) {
           if (!subArrays[j].empty()) {
               std::string subFile = "temp_" + std::to_string(depth) + "_p" + std::to_string(j) + ".bin";
-              writeBlock(subFile, blockCounters[j], B, subArrays[j]);
+              writeBlock(subFile, blockCounters[j], subArrays[j]);
               blockCounters[j]++;
           }
      }
@@ -158,20 +155,20 @@ void quicksortExternal(const std::string &filename, size_t N, size_t B, size_t M
                std::cerr << "No se pudo abrir " << subFilename << " (posiblemente vacío).\n";
                continue; // salta a la siguiente iteración
           }
-          size_t sizebytes = in.tellg();
-          if (sizebytes == 0) {
+          size_t sizeBytes = in.tellg();
+          if (sizeBytes == 0) {
                std::cerr << subFilename << " está vacío, se omite.\n";
                in.close();
                continue;
           } 
-          numElements[i] = sizebytes / sizeof(int64_t);
+          numElements[i] = sizeBytes / sizeof(int64_t);
           in.close();
-          quicksortExternal("temp_" + std::to_string(depth) + "_p" + std::to_string(i) + ".bin", numElements[i], B, M, a, depth + 1);
+          quicksortExternal("temp_" + std::to_string(depth) + "_p" + std::to_string(i) + ".bin", numElements[i], a, depth + 1);
      }
      //fusionar los subarreglos
      std::ofstream out(filename, std::ios::binary);
-     std::vector<int64_t> accumulatedBuffer; // buffer acumulado
-     accumulatedBuffer.reserve(blockSize);  // reserva espacio para evitar realocaciones
+     std::vector<int64_t> accumulatedBuffer;
+     accumulatedBuffer.reserve(blockSize); 
      size_t outCurrentBlock = 0; // inicializar conteo de bloques
 
      for (size_t i = 0; i < a; ++i) {
@@ -187,24 +184,19 @@ void quicksortExternal(const std::string &filename, size_t N, size_t B, size_t M
           
           for (size_t j = 0; j < totalBlocks; ++j) {
                std::vector<int64_t> buffer;
-               readBlock(tempFile, j, B, buffer);
-          
-               // acumular los valores en el buffer global
+               readBlock(tempFile, j, buffer);
                accumulatedBuffer.insert(accumulatedBuffer.end(), buffer.begin(), buffer.end());
-          
-               // si se alcanza el tamaño de un bloque escribirlo al archivo
                while (accumulatedBuffer.size() >= blockSize) {
                     std::vector<int64_t> blockToWrite(accumulatedBuffer.begin(), accumulatedBuffer.begin() + blockSize);
-                    writeBlock(filename, outCurrentBlock++, B, blockToWrite);
+                    writeBlock(filename, outCurrentBlock++, blockToWrite);
                     accumulatedBuffer.erase(accumulatedBuffer.begin(), accumulatedBuffer.begin() + blockSize);
                }
           }
           std::remove(tempFile.c_str());
      }
-      
-      //escribir elementos faltantes en buffer acumulado 
+     //escribir elementos que faltan en el buffer
      if (!accumulatedBuffer.empty()) {
-          writeBlock(filename, outCurrentBlock++, B, accumulatedBuffer);
+          writeBlock(filename, outCurrentBlock++, accumulatedBuffer);
      }
      out.close();
      return;
@@ -213,16 +205,8 @@ void quicksortExternal(const std::string &filename, size_t N, size_t B, size_t M
 int main() {
      std::string filename = "datos_60M.bin"; 
      srand(static_cast<unsigned>(time(0)));
-     size_t memoryLimitBytes = 50000000; 
-
-     size_t N = 3145728000 / sizeof(int64_t); 
-     size_t M = memoryLimitBytes / sizeof(int64_t);
-     size_t B = 4096; 
-     size_t a = 32;  
-     
-     quicksortExternal(filename, N, B, M, a);
+     size_t N = 3145728000 / sizeof(int64_t);  
+     quicksortExternal(filename, N, a);
      std::cout << "Cantidad de Read y Writes: " << readnwrite << std::endl;
-
      return 0;
-
 }
