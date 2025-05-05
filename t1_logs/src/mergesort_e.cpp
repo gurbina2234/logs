@@ -10,7 +10,7 @@
 #define NUMS_POR_BLOQUE (B_BYTES / sizeof(int64_t)) // = 512 | cant de numeros por bloque
 #define BLOQUES_EN_RAM (RESERVA_RAM / B_BYTES) //numero de bloques posibles en RAM (con reserva)
 #define NUMS_EN_RAM (BLOQUES_EN_RAM * NUMS_POR_BLOQUE) // = 6.291.456 numeros
-#define ARIDAD 128 //aridad (numero de archivos a mergear)
+#define ARIDAD 256 //aridad (numero de archivos a mergear)
 
 size_t lecturas_escrituras = 0;
 
@@ -242,7 +242,7 @@ void merge_cant_sobre_a(size_t cantidad, int cuociente, int residuo, int cuantos
     fclose(f_out);
 }
 
-void merge_middle_files(size_t cantidad, int cuantosM, int *cantidadSupMid) {
+void merge_middle_files(size_t cantidad, int cuantosM, int *cantidadSupMid, int iteracion) {
     if (cantidad > ARIDAD) {
         printf("cantidad: %zu | aridad: %d", cantidad, ARIDAD);
         int cuociente = cantidad / ARIDAD;
@@ -267,7 +267,7 @@ void merge_middle_files(size_t cantidad, int cuantosM, int *cantidadSupMid) {
     }
 
     char nombre_archivo_ordenado[64];
-    sprintf(nombre_archivo_ordenado, "orden_%dM.bin", cuantosM);
+    sprintf(nombre_archivo_ordenado, "orden_%dM_%d.bin", cuantosM, iteracion);
     FILE *f_out = fopen(nombre_archivo_ordenado, "wb");
     if (!f_out) {
         perror("crear orden final");
@@ -318,21 +318,37 @@ void borrar_middle_files(size_t cantidad_mids, int cantidad_sup_mids, int cuanto
     }
 }
 
+void reiniciar_contador_IOs() {
+    lecturas_escrituras = 0;
+}
+
 int main() {
-    size_t cantidad_mids = 0;
-    int cantidadSupMids = 0;
-    clock_t inicio = clock();
+    int cuantosM = 60;
 
-    generar_middle_files("datos_60M.bin", &cantidad_mids);
-    merge_middle_files(cantidad_mids, 60, &cantidadSupMids);
-    borrar_middle_files(cantidad_mids, cantidadSupMids, 60);
+    for (int i = 0; i < 5; i++) {
+        reiniciar_contador_IOs();
 
-    clock_t fin = clock();
-    double segundos = (double)(fin - inicio) / CLOCKS_PER_SEC;
+        size_t cantidad_mids = 0;
+        int cantidadSupMids = 0;
+        char nombre_archivo[64];
+        sprintf(nombre_archivo, "datos_%dM_%d.bin", cuantosM, i);
+        
+        clock_t inicio = clock();
 
-    printf("\nArchivo ordenado: orden_%dM.bin\n", 60);
-    printf("Tiempo total: %.2f segundos\n", segundos);
-    printf("Total I/Os (lecturas + escrituras de bloques): %zu\n", lecturas_escrituras);
+        generar_middle_files(nombre_archivo, &cantidad_mids);
+        merge_middle_files(cantidad_mids, 60, &cantidadSupMids, i);
+
+        clock_t fin = clock();
+        double segundos = (double)(fin - inicio) / CLOCKS_PER_SEC;
+        
+        printf("\nArchivo ordenado: orden_%dM_%d.bin\n", 60, i);
+        printf("Tiempo total: %.2f segundos\n", segundos);
+        printf("Total I/Os (lecturas + escrituras de bloques): %zu\n", lecturas_escrituras);
+        
+        printf("Borrando middle files antes de comenzar denuevo...");
+        borrar_middle_files(cantidad_mids, cantidadSupMids, 60);
+        printf("Comenzando siguiente iteracion.");
+    }
 
     return 0;
 }
