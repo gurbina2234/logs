@@ -94,7 +94,7 @@ void readAllMemory(const std::string &filename,size_t startBlock, size_t numBloc
      }
 }
 
-void quicksortExternal(const std::string &filename, size_t N, size_t a, size_t depth = 0) {
+void quicksortExternal(const std::string &filename, const std::string &filenameSorted, size_t N, size_t a, size_t depth = 0) {
      size_t numBlocks = (N + blockSize - 1) / blockSize;
      if (N <= M) {
           std::cout << "CASO BASE!! Ordenando " << N << " elementos en memoria principal.\n";
@@ -105,7 +105,7 @@ void quicksortExternal(const std::string &filename, size_t N, size_t a, size_t d
                size_t start = i * blockSize;
                size_t end = std::min(start + blockSize, N);
                std::vector<int64_t> valuesBlock(uploadMemory.begin() + start, uploadMemory.begin() + end);
-               writeBlock(filename, i, valuesBlock);
+               writeBlock(filenameSorted, i, valuesBlock);
           }
           return;
      }
@@ -153,7 +153,7 @@ void quicksortExternal(const std::string &filename, size_t N, size_t a, size_t d
           std::ifstream in(subFilename, std::ios::binary | std::ios::ate);
           if (!in) {
                std::cerr << "No se pudo abrir " << subFilename << " (posiblemente vacío).\n";
-               continue; // salta a la siguiente iteración
+               continue; 
           }
           size_t sizeBytes = in.tellg();
           if (sizeBytes == 0) {
@@ -163,14 +163,13 @@ void quicksortExternal(const std::string &filename, size_t N, size_t a, size_t d
           } 
           numElements[i] = sizeBytes / sizeof(int64_t);
           in.close();
-          quicksortExternal("temp_" + std::to_string(depth) + "_p" + std::to_string(i) + ".bin", numElements[i], a, depth + 1);
+          quicksortExternal(subFilename, subFilename, numElements[i], a, depth + 1);
      }
      //fusionar los subarreglos
-     std::ofstream out(filename, std::ios::binary);
+     std::ofstream out(filenameSorted, std::ios::binary);
      std::vector<int64_t> accumulatedBuffer;
      accumulatedBuffer.reserve(blockSize); 
-     size_t outCurrentBlock = 0; // inicializar conteo de bloques
-
+     size_t outCurrentBlock = 0; // inicializar conteo de bloques en nuevo archivo binario
      for (size_t i = 0; i < a; ++i) {
           std::string tempFile = "temp_" + std::to_string(depth) + "_p" + std::to_string(i) + ".bin";
           std::ifstream in(tempFile, std::ios::binary | std::ios::ate);
@@ -181,14 +180,13 @@ void quicksortExternal(const std::string &filename, size_t N, size_t a, size_t d
           size_t fileSize = in.tellg() / sizeof(int64_t);
           size_t totalBlocks = (fileSize + blockSize - 1) / blockSize;
           in.close();
-          
           for (size_t j = 0; j < totalBlocks; ++j) {
                std::vector<int64_t> buffer;
                readBlock(tempFile, j, buffer);
                accumulatedBuffer.insert(accumulatedBuffer.end(), buffer.begin(), buffer.end());
                while (accumulatedBuffer.size() >= blockSize) {
                     std::vector<int64_t> blockToWrite(accumulatedBuffer.begin(), accumulatedBuffer.begin() + blockSize);
-                    writeBlock(filename, outCurrentBlock++, blockToWrite);
+                    writeBlock(filenameSorted, outCurrentBlock++, blockToWrite);
                     accumulatedBuffer.erase(accumulatedBuffer.begin(), accumulatedBuffer.begin() + blockSize);
                }
           }
@@ -196,7 +194,7 @@ void quicksortExternal(const std::string &filename, size_t N, size_t a, size_t d
      }
      //escribir elementos que faltan en el buffer
      if (!accumulatedBuffer.empty()) {
-          writeBlock(filename, outCurrentBlock++, accumulatedBuffer);
+          writeBlock(filenameSorted, outCurrentBlock++, accumulatedBuffer);
      }
      out.close();
      return;
@@ -204,9 +202,10 @@ void quicksortExternal(const std::string &filename, size_t N, size_t a, size_t d
 
 int main() {
      std::string filename = "datos_60M.bin"; 
+     std::string filenameSorted = "SORTED.bin"; // nombre del archivo nuevo ordenado
      srand(static_cast<unsigned>(time(0)));
      size_t N = 3145728000 / sizeof(int64_t);  
-     quicksortExternal(filename, N, a);
+     quicksortExternal(filename, filenameSorted, N, a);
      std::cout << "Cantidad de Read y Writes: " << readnwrite << std::endl;
      return 0;
 }
