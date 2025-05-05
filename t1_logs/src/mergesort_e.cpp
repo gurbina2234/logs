@@ -176,8 +176,9 @@ void merge_tanda(int inicio, int cantidad, const char* nombre_salida) {
 }
 
 
-void merge_cant_sobre_a(size_t cantidad, int cuociente, int residuo, int cuantosM) {
+void merge_cant_sobre_a(size_t cantidad, int cuociente, int residuo, int cuantosM, int *cantidadSupMid) {
     for (int index = 0; index < cuociente; index++) {
+        *cantidadSupMid = cuociente + (residuo > 0);
         int offset = index * ARIDAD;
         char nombre_salida[64];
         sprintf(nombre_salida, "superior_mid_%dM_%d.bin", cuantosM, index);
@@ -241,12 +242,12 @@ void merge_cant_sobre_a(size_t cantidad, int cuociente, int residuo, int cuantos
     fclose(f_out);
 }
 
-void merge_middle_files(size_t cantidad, int cuantosM) {
+void merge_middle_files(size_t cantidad, int cuantosM, int *cantidadSupMid) {
     if (cantidad > ARIDAD) {
         printf("cantidad: %zu | aridad: %d", cantidad, ARIDAD);
         int cuociente = cantidad / ARIDAD;
         int residuo = cantidad % ARIDAD;
-        merge_cant_sobre_a(cantidad, cuociente, residuo, cuantosM);
+        merge_cant_sobre_a(cantidad, cuociente, residuo, cuantosM, cantidadSupMid);
         return;
     }
 
@@ -298,12 +299,33 @@ void merge_middle_files(size_t cantidad, int cuantosM) {
     fclose(f_out);
 }
 
+void borrar_middle_files(size_t cantidad_mids, int cantidad_sup_mids, int cuantosM) {
+    for (int i = 0; i < cantidad_mids; i++) {
+        char nombre_mid[64];
+        sprintf(nombre_mid, "mid_%d.bin", i);
+        if (remove(nombre_mid) != 0) {
+            perror("borrar mid file");
+            exit(1);
+        }
+    }
+    for (int i = 0; i < cantidad_sup_mids; i++) {
+        char nombre_sup_mid[64];
+        sprintf(nombre_sup_mid, "superior_mid_%dM_%d.bin", cuantosM, i);
+        if (remove(nombre_sup_mid) != 0) {
+            perror("borrar superior mid file");
+            exit(1);
+        }
+    }
+}
+
 int main() {
     size_t cantidad_mids = 0;
+    int cantidadSupMids = 0;
     clock_t inicio = clock();
 
     generar_middle_files("datos_60M.bin", &cantidad_mids);
-    merge_middle_files(cantidad_mids, 60);
+    merge_middle_files(cantidad_mids, 60, &cantidadSupMids);
+    borrar_middle_files(cantidad_mids, cantidadSupMids, 60);
 
     clock_t fin = clock();
     double segundos = (double)(fin - inicio) / CLOCKS_PER_SEC;
