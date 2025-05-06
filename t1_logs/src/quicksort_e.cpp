@@ -8,9 +8,9 @@
 size_t readnwrite = 0;
 size_t B = 4096; 
 size_t blockSize = B / sizeof(int64_t);
-size_t M = 50000000 / sizeof(int64_t);
+size_t M = (50 * 1024 * 1024) / sizeof(int64_t);
 size_t blocksMemory = (M + blockSize - 1) / blockSize;
-size_t a = 32;
+size_t a = 256;
 
 void readBlock(const std::string &filename, size_t posicion, std::vector<int64_t> &buffer) {
      std::ifstream file(filename, std::ios::binary);
@@ -18,7 +18,6 @@ void readBlock(const std::string &filename, size_t posicion, std::vector<int64_t
           std::cerr << "Error opening file: " << filename << std::endl;
           return;
      }
-
      file.seekg(posicion * B, std::ios::beg);
      buffer.resize(blockSize); 
      file.read(reinterpret_cast<char *>(buffer.data()), B);
@@ -54,34 +53,24 @@ std::vector<int64_t> randomInterval(const std::string &filename, size_t N, size_
      std::vector<int64_t> buffer;
      size_t numBlocks = (N + blockSize - 1) / blockSize;
      size_t numPivots = a - 1;
-     
      // crear intentos para evitar que se tenga un set de pivotes incorrecto
      std::set<int64_t> candidates;
-     size_t maxTries = 2;  
- 
+     size_t maxTries = 1;  
      for (size_t tries = 0; tries < maxTries && candidates.size() < numPivots; ++tries) {
          size_t randomBlock = rand() % numBlocks;
          std::vector<int64_t> tempBuffer;
          readBlock(filename, randomBlock, tempBuffer);
+         std::shuffle(tempBuffer.begin(), tempBuffer.end(), std::mt19937{std::random_device{}()});
          for (auto val : tempBuffer) {
              candidates.insert(val);
              if (candidates.size() >= numPivots) break;
          }
      }
- 
      if (candidates.size() < numPivots) {
          std::cerr << "No se pudieron obtener suficientes pivotes unicos!!.\n";
      }
- 
      std::vector<int64_t> pivots(candidates.begin(), candidates.end());
      std::sort(pivots.begin(), pivots.end());
- 
-     std::cout << "Pivotes elegidos:\n";
-     for (int64_t num : pivots) {
-         std::cout << num << " ";
-     }
-     std::cout << std::endl;
- 
      return pivots;
 }
 
@@ -97,7 +86,6 @@ void readAllMemory(const std::string &filename,size_t startBlock, size_t numBloc
 void quicksortExternal(const std::string &filename, const std::string &filenameSorted, size_t N, size_t a, size_t depth = 0) {
      size_t numBlocks = (N + blockSize - 1) / blockSize;
      if (N <= M) {
-          std::cout << "CASO BASE!! Ordenando " << N << " elementos en memoria principal.\n";
           std::vector<int64_t> uploadMemory;
           readAllMemory(filename, 0, numBlocks, uploadMemory);
           std::sort(uploadMemory.begin(), uploadMemory.end());
@@ -200,12 +188,28 @@ void quicksortExternal(const std::string &filename, const std::string &filenameS
      return;
 } 
 
+void reiniciar_contador_IOs() {
+     readnwrite = 0;
+}
+
 int main() {
-     std::string filename = "datos_60M.bin"; 
-     std::string filenameSorted = "SORTED.bin"; // nombre del archivo nuevo ordenado
      srand(static_cast<unsigned>(time(0)));
-     size_t N = 3145728000 / sizeof(int64_t);  
-     quicksortExternal(filename, filenameSorted, N, a);
-     std::cout << "Cantidad de Read y Writes: " << readnwrite << std::endl;
+     for (size_t i = 0; i < 5; ++i) {
+          reiniciar_contador_IOs();
+          std::string filename = "datos_60M_" + std::to_string(i) + ".bin";
+          std::cout << "Comienzo con el archivo: " << filename << std::endl;
+          std::string filenameSorted = "SORTED_60M_" + std::to_string(i) + std::to_string(a) + ".bin";
+          size_t MB = 50 * 1024 * 1024;
+          size_t Nbytes = 60 * MB;
+          size_t N = Nbytes / sizeof(int64_t);  
+          auto start = std::chrono::high_resolution_clock::now();
+          quicksortExternal(filename, filenameSorted, N, a);
+          auto end = std::chrono::high_resolution_clock::now();
+          std::chrono::duration<double> elapsed = end - start;
+          std::cout << "Cantidad de Read y Writes: " << readnwrite << std::endl;
+          std::cout << "Tiempo total: " << elapsed.count() << " segundos." << std::endl;
+          std::cout << "Proxima iteracion: " << i+1 << std::endl;
+          std::cout << "----------------------------------------\n" << std::endl;
+     }
      return 0;
 }
