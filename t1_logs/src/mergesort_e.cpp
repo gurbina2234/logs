@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <ctime>
 #include <cstring>
+#include "mergesort_e.hpp"
 
 /**
  * CONSTANTES DE CONFIGURACIÓN
