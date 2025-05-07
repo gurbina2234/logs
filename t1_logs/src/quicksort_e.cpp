@@ -22,7 +22,7 @@ void readBlock(const std::string &filename, size_t posicion, std::vector<int64_t
      buffer.resize(blockSize); 
      file.read(reinterpret_cast<char *>(buffer.data()), B);
      size_t bytesRead = file.gcount();
-     if (bytesRead < B) {
+     if (bytesRead < B) { //caso bloque incompleto
           buffer.resize(bytesRead / sizeof(int64_t));
      }
      readnwrite ++;
@@ -43,28 +43,32 @@ void writeBlock(const std::string &filename, size_t posicion, std::vector<int64_
           }
      }
      file.seekp(posicion * B, std::ios::beg);
-     size_t bytestoWrite = buffer.size() * sizeof(int64_t);
-     file.write(reinterpret_cast<const char *>(buffer.data()), bytestoWrite);
+     if (buffer.size() < blockSize) {
+          size_t bytesIncomplete = buffer.size() * sizeof(int64_t);
+          file.write(reinterpret_cast<const char *>(buffer.data()), bytesIncomplete);
+     }
+     else{
+          size_t bytesTotal = blockSize * sizeof(int64_t);
+          file.write(reinterpret_cast<const char *>(buffer.data()), bytesTotal);
+     }
      readnwrite ++;
      file.close();
+     return;
 }
  
-std::vector<int64_t> randomInterval(const std::string &filename, size_t N, size_t a) {
+std::vector<int64_t> randomInterval(const std::string &filename, size_t N) {
      std::vector<int64_t> buffer;
      size_t numBlocks = (N + blockSize - 1) / blockSize;
      size_t numPivots = a - 1;
      // crear intentos para evitar que se tenga un set de pivotes incorrecto
      std::set<int64_t> candidates;
-     size_t maxTries = 1;  
-     for (size_t tries = 0; tries < maxTries && candidates.size() < numPivots; ++tries) {
-         size_t randomBlock = rand() % numBlocks;
-         std::vector<int64_t> tempBuffer;
-         readBlock(filename, randomBlock, tempBuffer);
-         std::shuffle(tempBuffer.begin(), tempBuffer.end(), std::mt19937{std::random_device{}()});
-         for (auto val : tempBuffer) {
-             candidates.insert(val);
-             if (candidates.size() >= numPivots) break;
-         }
+     size_t randomBlock = rand() % numBlocks;
+     std::vector<int64_t> tempBuffer;
+     readBlock(filename, randomBlock, tempBuffer);
+     std::shuffle(tempBuffer.begin(), tempBuffer.end(), std::mt19937{std::random_device{}()});
+     for (auto val : tempBuffer) {
+          candidates.insert(val);
+          if (candidates.size() >= numPivots) break;
      }
      if (candidates.size() < numPivots) {
          std::cerr << "No se pudieron obtener suficientes pivotes unicos!!.\n";
@@ -83,7 +87,42 @@ void readAllMemory(const std::string &filename,size_t startBlock, size_t numBloc
      }
 }
 
-void quicksortExternal(const std::string &filename, const std::string &filenameSorted, size_t N, size_t a, size_t depth = 0) {
+void mergeFiles(const std::string &filenameSorted, size_t N, size_t depth) {
+     std::fstream file(filenameSorted, std::ios::binary | std::ios::in | std::ios::out);
+     std::vector<int64_t> accumulatedBuffer;
+     accumulatedBuffer.reserve(blockSize); 
+     size_t outCurrentBlock = 0; // inicializar conteo de bloques en nuevo archivo binario
+     for (size_t i = 0; i < a; ++i) {
+          std::string tempFile = "temp_" + std::to_string(depth) + "_p" + std::to_string(i) + ".bin";
+          std::ifstream in(tempFile, std::ios::binary | std::ios::ate);
+          if (!in) {
+               std::cerr << "Error opening temp file: " << tempFile << std::endl;
+               continue;
+          }
+          size_t fileSize = in.tellg() / sizeof(int64_t);
+          size_t totalBlocks = (fileSize + blockSize - 1) / blockSize;
+          in.close();
+          for (size_t j = 0; j < totalBlocks; ++j) {
+               std::vector<int64_t> buffer;
+               readBlock(tempFile, j, buffer);
+               accumulatedBuffer.insert(accumulatedBuffer.end(), buffer.begin(), buffer.end());
+               while (accumulatedBuffer.size() >= blockSize) {
+                    std::vector<int64_t> blockToWrite(accumulatedBuffer.begin(), accumulatedBuffer.begin() + blockSize);
+                    writeBlock(filenameSorted, outCurrentBlock++, blockToWrite);
+                    accumulatedBuffer.erase(accumulatedBuffer.begin(), accumulatedBuffer.begin() + blockSize);
+               }
+          }
+          std::remove(tempFile.c_str());
+     }
+     //escribir elementos que faltan en el buffer
+     if (!accumulatedBuffer.empty()) {
+          writeBlock(filenameSorted, outCurrentBlock++, accumulatedBuffer);
+     }
+     file.close();
+     return;
+}
+
+void quicksortExternal(const std::string &filename, const std::string &filenameSorted, size_t N, size_t depth) {
      size_t numBlocks = (N + blockSize - 1) / blockSize;
      if (N <= M) {
           std::vector<int64_t> uploadMemory;
@@ -97,8 +136,7 @@ void quicksortExternal(const std::string &filename, const std::string &filenameS
           }
           return;
      }
-     std::cout << "CASO RECURSIVO!! Ordenando " << N << " elementos en disco.\n";
-     std::vector<int64_t> pivots = randomInterval(filename, N, a);
+     std::vector<int64_t> pivots = randomInterval(filename, N);
      std::vector<std::vector<int64_t>> subArrays(a);
      std::vector<size_t> blockCounters(a, 0);
      for (size_t i = 0; i < numBlocks; i += blocksMemory) {
@@ -151,40 +189,9 @@ void quicksortExternal(const std::string &filename, const std::string &filenameS
           } 
           numElements[i] = sizeBytes / sizeof(int64_t);
           in.close();
-          quicksortExternal(subFilename, subFilename, numElements[i], a, depth + 1);
+          quicksortExternal(subFilename, subFilename, numElements[i], depth + 1);
      }
-     //fusionar los subarreglos
-     std::ofstream out(filenameSorted, std::ios::binary);
-     std::vector<int64_t> accumulatedBuffer;
-     accumulatedBuffer.reserve(blockSize); 
-     size_t outCurrentBlock = 0; // inicializar conteo de bloques en nuevo archivo binario
-     for (size_t i = 0; i < a; ++i) {
-          std::string tempFile = "temp_" + std::to_string(depth) + "_p" + std::to_string(i) + ".bin";
-          std::ifstream in(tempFile, std::ios::binary | std::ios::ate);
-          if (!in) {
-               std::cerr << "Error opening temp file: " << tempFile << std::endl;
-               continue;
-          }
-          size_t fileSize = in.tellg() / sizeof(int64_t);
-          size_t totalBlocks = (fileSize + blockSize - 1) / blockSize;
-          in.close();
-          for (size_t j = 0; j < totalBlocks; ++j) {
-               std::vector<int64_t> buffer;
-               readBlock(tempFile, j, buffer);
-               accumulatedBuffer.insert(accumulatedBuffer.end(), buffer.begin(), buffer.end());
-               while (accumulatedBuffer.size() >= blockSize) {
-                    std::vector<int64_t> blockToWrite(accumulatedBuffer.begin(), accumulatedBuffer.begin() + blockSize);
-                    writeBlock(filenameSorted, outCurrentBlock++, blockToWrite);
-                    accumulatedBuffer.erase(accumulatedBuffer.begin(), accumulatedBuffer.begin() + blockSize);
-               }
-          }
-          std::remove(tempFile.c_str());
-     }
-     //escribir elementos que faltan en el buffer
-     if (!accumulatedBuffer.empty()) {
-          writeBlock(filenameSorted, outCurrentBlock++, accumulatedBuffer);
-     }
-     out.close();
+     mergeFiles(filenameSorted, N, depth);
      return;
 } 
 
@@ -198,12 +205,12 @@ int main() {
           reiniciar_contador_IOs();
           std::string filename = "datos_60M_" + std::to_string(i) + ".bin";
           std::cout << "Comienzo con el archivo: " << filename << std::endl;
-          std::string filenameSorted = "SORTED_60M_" + std::to_string(i) + std::to_string(a) + ".bin";
+          std::string filenameSorted = "SORTED_60M_" + std::to_string(i) + "_" + std::to_string(a) + ".bin";
           size_t MB = 50 * 1024 * 1024;
           size_t Nbytes = 60 * MB;
           size_t N = Nbytes / sizeof(int64_t);  
           auto start = std::chrono::high_resolution_clock::now();
-          quicksortExternal(filename, filenameSorted, N, a);
+          quicksortExternal(filename, filenameSorted, N);
           auto end = std::chrono::high_resolution_clock::now();
           std::chrono::duration<double> elapsed = end - start;
           std::cout << "Cantidad de Read y Writes: " << readnwrite << std::endl;
