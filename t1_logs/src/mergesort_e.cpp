@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <ctime>
 #include <cstring>
+#include <vector>
 #include "mergesort_e.hpp"
 
 /**
@@ -150,7 +151,7 @@ int seleccionar_minimo(Mid *mids, size_t cantidad_mids) {
  * @param nombre_salida Nombre del archivo de salida
  */
 void merge_tanda(int inicio, int cantidad, const char* nombre_salida) {
-    Mid mids[cantidad];
+    std::vector<Mid> mids(cantidad);
     int64_t buffer_a_disco[NUMS_POR_BLOQUE];
     size_t elementos_escritos = 0;
 
@@ -180,7 +181,7 @@ void merge_tanda(int inicio, int cantidad, const char* nombre_salida) {
     }
 
     while (1) {
-        int idx = seleccionar_minimo(mids, cantidad);
+        int idx = seleccionar_minimo(mids.data(), cantidad);
         if (idx == -1) break;
 
         buffer_a_disco[elementos_escritos++] = mids[idx].buffer[mids[idx].pos++];
@@ -231,7 +232,7 @@ void merge_cant_sobre_a(size_t cantidad, int cuociente, int residuo, int cuantos
         merge_tanda(offset, residuo, nombre_salida);
     }
 
-    Mid sup_mids[cuociente + (residuo > 0)];
+    std::vector<Mid> sup_mids(cuociente + (residuo > 0));
     int64_t buffer_a_disco[NUMS_POR_BLOQUE];
     size_t elementos_escritos = 0;
 
@@ -255,7 +256,7 @@ void merge_cant_sobre_a(size_t cantidad, int cuociente, int residuo, int cuantos
     }
 
     while (1) {
-        int idx = seleccionar_minimo(sup_mids, cuociente + (residuo > 0));
+        int idx = seleccionar_minimo(sup_mids.data(), cuociente + (residuo > 0));
         if (idx == -1) break;
 
         buffer_a_disco[elementos_escritos++] = sup_mids[idx].buffer[sup_mids[idx].pos++];
@@ -375,37 +376,3 @@ void reiniciar_contador_IOs() {
     lecturas_escrituras = 0;
 }
 
-/**
- * Función principal que ejecuta el algoritmo completo
- * Realiza 5 iteraciones del proceso de ordenamiento
- */
-int main() {
-    int cuantosM = 60;
-
-    for (int i = 0; i < 5; i++) {
-        reiniciar_contador_IOs();
-
-        size_t cantidad_mids = 0;
-        int cantidadSupMids = 0;
-        char nombre_archivo[64];
-        sprintf(nombre_archivo, "datos_%dM_%d.bin", cuantosM, i);
-        
-        clock_t inicio = clock();
-
-        generar_middle_files(nombre_archivo, &cantidad_mids);
-        merge_middle_files(cantidad_mids, 60, &cantidadSupMids, i);
-
-        clock_t fin = clock();
-        double segundos = (double)(fin - inicio) / CLOCKS_PER_SEC;
-        
-        printf("\nArchivo ordenado: orden_%dM_%d.bin\n", 60, i);
-        printf("Tiempo total: %.2f segundos\n", segundos);
-        printf("Total I/Os (lecturas + escrituras de bloques): %zu\n", lecturas_escrituras);
-        
-        printf("Borrando middle files antes de comenzar denuevo...");
-        borrar_middle_files(cantidad_mids, cantidadSupMids, 60);
-        printf("Comenzando siguiente iteracion.");
-    }
-
-    return 0;
-}

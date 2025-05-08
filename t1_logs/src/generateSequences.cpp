@@ -85,18 +85,3 @@ void generateSequences(int64_t N, const std::string &filename) {
   std::cout << "Archivo generado: " << filename << " (" << totalEnteros << " enteros, " << N / (1024 * 1024) << " MB)" << std::endl;
 }
 
-int main() {
-    const size_t MB = 50 * 1024 * 1024;
-
-    for (int i = 0; i < 5; i++) {
-      size_t total_bytes = 60 * MB;
-      //std::string nombre = "datos_" + std::to_string(60) + "M.bin";
-      char nombre[64];
-      sprintf(nombre, "datos_60M_%d.bin", i);
-      generateSequences(total_bytes, nombre);
-    }
-    //for (int m = 4; m <= 60; m += 4) {
-    //}
-
-    return 0;
-  }
