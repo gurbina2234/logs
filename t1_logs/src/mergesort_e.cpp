@@ -5,6 +5,7 @@
 #include <cstring>
 #include <vector>
 #include "mergesort_e.hpp"
+#include "IOs.hpp"
 
 /**
  * CONSTANTES DE CONFIGURACIÓN
@@ -16,9 +17,6 @@
 #define BLOQUES_EN_RAM (RESERVA_RAM / B_BYTES) //numero de bloques posibles en RAM (con reserva)
 #define NUMS_EN_RAM (BLOQUES_EN_RAM * NUMS_POR_BLOQUE) // = 6.291.456 numeros
 #define ARIDAD 192 //aridad (numero de archivos a mergear)
-
-// Contador global de operaciones de lectura/escritura para medir rendimiento
-size_t lecturas_escrituras = 0;
 
 
 /**

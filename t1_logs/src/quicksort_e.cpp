@@ -4,8 +4,8 @@
 #include <ctime>
 #include <random>
 #include <set>
+#include <IOs.hpp>
 
-size_t readnwrite = 0;
 size_t B = 4096; 
 size_t blockSize = B / sizeof(int64_t);
 size_t M = (50 * 1024 * 1024) / sizeof(int64_t);
@@ -25,7 +25,7 @@ void readBlock(const std::string &filename, size_t posicion, std::vector<int64_t
      if (bytesRead < B) { //caso bloque incompleto
           buffer.resize(bytesRead / sizeof(int64_t));
      }
-     readnwrite ++;
+     lecturas_escrituras++;
      file.close();
 }
  
@@ -51,7 +51,7 @@ void writeBlock(const std::string &filename, size_t posicion, std::vector<int64_
           size_t bytesTotal = blockSize * sizeof(int64_t);
           file.write(reinterpret_cast<const char *>(buffer.data()), bytesTotal);
      }
-     readnwrite ++;
+     lecturas_escrituras++;
      file.close();
      return;
 }

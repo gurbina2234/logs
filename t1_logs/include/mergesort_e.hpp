@@ -100,12 +100,4 @@ void merge_middle_files(size_t cantidad, int cuantosM, int *cantidadSupMid, int 
  */
 void borrar_middle_files(size_t cantidad_mids, int cantidad_sup_mids, int cuantosM);
 
-/**
- * Reinicia el contador de operaciones I/O
- */
-void reiniciar_contador_IOs();
-
-// Variable global para contar operaciones de I/O
-extern size_t lecturas_escrituras;
-
 #endif // MERGESORT_E_HPP

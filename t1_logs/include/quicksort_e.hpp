@@ -80,12 +80,4 @@ void mergeFiles(const std::string &filenameSorted, size_t N, size_t depth);
  */
 void quicksortExternal(const std::string &filename, const std::string &filenameSorted, size_t N, size_t depth = 0);
 
-/**
- * @brief Reinicia el contador global de lecturas/escrituras
- *
- * Esta función reinicia el contador global que rastrea el número de I/Os
- * realizadas durante la ejecución del programa.
- */
-void reiniciar_contador_IOs();
-
 #endif
