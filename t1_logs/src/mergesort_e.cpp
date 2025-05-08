@@ -3,17 +3,26 @@
 #include <cstdint>
 #include <ctime>
 #include <cstring>
+#include "mergesort_e.hpp"
 
+/**
+ * CONSTANTES DE CONFIGURACIÓN
+ */
 #define B_BYTES 4096 //tamaño bloque
 #define M_BYTES (50 * 1024 * 1024) //tamaño RAM
 #define RESERVA_RAM (48 * 1024 * 1024) //tamaño de RAM a reservar
 #define NUMS_POR_BLOQUE (B_BYTES / sizeof(int64_t)) // = 512 | cant de numeros por bloque
 #define BLOQUES_EN_RAM (RESERVA_RAM / B_BYTES) //numero de bloques posibles en RAM (con reserva)
 #define NUMS_EN_RAM (BLOQUES_EN_RAM * NUMS_POR_BLOQUE) // = 6.291.456 numeros
-#define ARIDAD 256 //aridad (numero de archivos a mergear)
+#define ARIDAD 192 //aridad (numero de archivos a mergear)
 
+// Contador global de operaciones de lectura/escritura para medir rendimiento
 size_t lecturas_escrituras = 0;
 
+/**
+ * Estructura que representa un archivo intermedio (mid file)
+ * Contiene un buffer para almacenar un bloque de datos y metadatos para su procesamiento
+ */
 typedef struct {
     FILE* archivo; //mid_#.bin
     int64_t buffer[NUMS_POR_BLOQUE]; //buffer de 1 bloque
@@ -22,13 +31,26 @@ typedef struct {
     bool terminado = false;
 } Mid;
 
+/**
+ * Función de comparación para qsort
+ * Compara dos números de 64 bits para determinar su orden
+ * @param a Puntero al primer número
+ * @param b Puntero al segundo número
+ * @return 1 si a>b, -1 si a<b, 0 si son iguales
+ */
 int comparar_64(const void *a, const void *b) {
     int64_t x = *(int64_t*)a;
     int64_t y = *(int64_t*)b;
     
-    return (x > y) - (x < y); //1 si a>b, -1 si a<b
+    return (x > y) - (x < y);
 }
 
+/**
+ * Primera fase del algoritmo: divide el archivo grande en archivos intermedios ordenados
+ * Lee bloques del archivo original, los ordena en memoria y los escribe en archivos temporales
+ * @param datos_desordenados Ruta al archivo con datos desordenados
+ * @param cantidad_mid_files Puntero donde se almacenará la cantidad de archivos intermedios generados
+ */
 void generar_middle_files(char *datos_desordenados, size_t *cantidad_mid_files) {
     FILE *f_in = fopen(datos_desordenados, "rb");
     if (!f_in) {
@@ -88,7 +110,11 @@ void generar_middle_files(char *datos_desordenados, size_t *cantidad_mid_files) 
     fclose(f_in);
 }
 
-//llena y/o actualiza el buffer del middle file
+/**
+ * Actualiza el buffer de un archivo intermedio
+ * Lee el siguiente bloque del archivo y actualiza los metadatos
+ * @param mid Puntero a la estructura Mid que se actualizará
+ */
 void update_mf_buffer(Mid *mid) {
     if (mid->terminado) return;
 
@@ -104,6 +130,13 @@ void update_mf_buffer(Mid *mid) {
     mid->pos = 0; //reiniciamos su posicion
 }
 
+/**
+ * Selecciona el valor mínimo entre los primeros elementos de cada buffer
+ * Parte fundamental del algoritmo de merge k-way
+ * @param mids Array de estructuras Mid
+ * @param cantidad_mids Cantidad de archivos intermedios
+ * @return Índice del buffer que contiene el valor mínimo, o -1 si todos están vacíos
+ */
 int seleccionar_minimo(Mid *mids, size_t cantidad_mids) {
     int idx = -1;
     int64_t val_min = 0;
@@ -121,6 +154,12 @@ int seleccionar_minimo(Mid *mids, size_t cantidad_mids) {
     return idx;
 }
 
+/**
+ * Realiza el merge de una tanda de archivos intermedios
+ * @param inicio Índice del primer archivo a procesar
+ * @param cantidad Cantidad de archivos a mergear
+ * @param nombre_salida Nombre del archivo de salida
+ */
 void merge_tanda(int inicio, int cantidad, const char* nombre_salida) {
     Mid mids[cantidad];
     int64_t buffer_a_disco[NUMS_POR_BLOQUE];
@@ -175,8 +214,17 @@ void merge_tanda(int inicio, int cantidad, const char* nombre_salida) {
     fclose(f_out);
 }
 
-
-void merge_cant_sobre_a(size_t cantidad, int cuociente, int residuo, int cuantosM, int *cantidadSupMid) {
+/**
+ * Realiza el merge de múltiples archivos intermedios en grupos de ARIDAD
+ * Implementa un merge jerárquico cuando hay demasiados archivos
+ * @param cantidad Cantidad total de archivos intermedios
+ * @param cuociente Número de grupos completos de ARIDAD
+ * @param residuo Archivos restantes que no completan un grupo
+ * @param cuantosM Tamaño del archivo en M (M = 50MB) (para nombrar archivos)
+ * @param cantidadSupMid Puntero donde se almacenará la cantidad de archivos superiores
+ * @param iteracion Número de iteración actual
+ */
+void merge_cant_sobre_a(size_t cantidad, int cuociente, int residuo, int cuantosM, int *cantidadSupMid, int iteracion) {
     for (int index = 0; index < cuociente; index++) {
         *cantidadSupMid = cuociente + (residuo > 0);
         int offset = index * ARIDAD;
@@ -210,7 +258,7 @@ void merge_cant_sobre_a(size_t cantidad, int cuociente, int residuo, int cuantos
     }
 
     char nombre_archivo_ordenado[64];
-    sprintf(nombre_archivo_ordenado, "orden_%dM.bin", cuantosM);
+    sprintf(nombre_archivo_ordenado, "orden_%dM_%d.bin", cuantosM, iteracion);
     FILE *f_out = fopen(nombre_archivo_ordenado, "wb");
     if (!f_out) {
         perror("crear orden final");
@@ -242,12 +290,19 @@ void merge_cant_sobre_a(size_t cantidad, int cuociente, int residuo, int cuantos
     fclose(f_out);
 }
 
+/**
+ * Función principal de merge que decide la estrategia según la cantidad de archivos
+ * @param cantidad Cantidad de archivos intermedios
+ * @param cuantosM Tamaño del archivo en MB
+ * @param cantidadSupMid Puntero donde se almacenará la cantidad de archivos superiores
+ * @param iteracion Número de iteración actual
+ */
 void merge_middle_files(size_t cantidad, int cuantosM, int *cantidadSupMid, int iteracion) {
     if (cantidad > ARIDAD) {
         printf("cantidad: %zu | aridad: %d", cantidad, ARIDAD);
         int cuociente = cantidad / ARIDAD;
         int residuo = cantidad % ARIDAD;
-        merge_cant_sobre_a(cantidad, cuociente, residuo, cuantosM, cantidadSupMid);
+        merge_cant_sobre_a(cantidad, cuociente, residuo, cuantosM, cantidadSupMid, iteracion);
         return;
     }
 
@@ -299,6 +354,12 @@ void merge_middle_files(size_t cantidad, int cuantosM, int *cantidadSupMid, int 
     fclose(f_out);
 }
 
+/**
+ * Elimina los archivos temporales generados durante el proceso
+ * @param cantidad_mids Cantidad de archivos intermedios
+ * @param cantidad_sup_mids Cantidad de archivos superiores
+ * @param cuantosM Tamaño del archivo en M (M = 50MB)
+ */
 void borrar_middle_files(size_t cantidad_mids, int cantidad_sup_mids, int cuantosM) {
     for (int i = 0; i < cantidad_mids; i++) {
         char nombre_mid[64];
@@ -318,10 +379,17 @@ void borrar_middle_files(size_t cantidad_mids, int cantidad_sup_mids, int cuanto
     }
 }
 
+/**
+ * Reinicia el contador de operaciones I/O
+ */
 void reiniciar_contador_IOs() {
     lecturas_escrituras = 0;
 }
 
+/**
+ * Función principal que ejecuta el algoritmo completo
+ * Realiza 5 iteraciones del proceso de ordenamiento
+ */
 int main() {
     int cuantosM = 60;
 
