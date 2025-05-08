@@ -10,7 +10,7 @@ size_t B = 4096;
 size_t blockSize = B / sizeof(int64_t);
 size_t M = (50 * 1024 * 1024) / sizeof(int64_t);
 size_t blocksMemory = (M + blockSize - 1) / blockSize;
-size_t a = 256;
+size_t a = 192;
 
 void readBlock(const std::string &filename, size_t posicion, std::vector<int64_t> &buffer) {
      std::ifstream file(filename, std::ios::binary);
@@ -194,29 +194,3 @@ void quicksortExternal(const std::string &filename, const std::string &filenameS
      mergeFiles(filenameSorted, N, depth);
      return;
 } 
-
-void reiniciar_contador_IOs() {
-     readnwrite = 0;
-}
-
-int main() {
-     srand(static_cast<unsigned>(time(0)));
-     for (size_t i = 0; i < 5; ++i) {
-          reiniciar_contador_IOs();
-          std::string filename = "datos_60M_" + std::to_string(i) + ".bin";
-          std::cout << "Comienzo con el archivo: " << filename << std::endl;
-          std::string filenameSorted = "SORTED_60M_" + std::to_string(i) + "_" + std::to_string(a) + ".bin";
-          size_t MB = 50 * 1024 * 1024;
-          size_t Nbytes = 60 * MB;
-          size_t N = Nbytes / sizeof(int64_t);  
-          auto start = std::chrono::high_resolution_clock::now();
-          quicksortExternal(filename, filenameSorted, N);
-          auto end = std::chrono::high_resolution_clock::now();
-          std::chrono::duration<double> elapsed = end - start;
-          std::cout << "Cantidad de Read y Writes: " << readnwrite << std::endl;
-          std::cout << "Tiempo total: " << elapsed.count() << " segundos." << std::endl;
-          std::cout << "Proxima iteracion: " << i+1 << std::endl;
-          std::cout << "----------------------------------------\n" << std::endl;
-     }
-     return 0;
-}
