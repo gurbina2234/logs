@@ -9,7 +9,7 @@
 
 void generateSequences(int64_t N, const std::string &filename) {
   //Definición de tamaño de buffer
-  const size_t BufferMB = 100;
+  const size_t BufferMB = 5;
   const size_t BufferSize = (BufferMB * 1024 * 1024) / sizeof(int64_t);
   int64_t totalEnteros = N / sizeof(int64_t);
   int64_t porSecuencia = totalEnteros / 5;
@@ -33,14 +33,11 @@ void generateSequences(int64_t N, const std::string &filename) {
   while (escritos < porSecuencia) {
     buffer.clear();
     size_t length = std::min(BufferSize, static_cast<size_t>(porSecuencia - escritos));
-    for (size_t i = 0; i < length; i++) {
+    for (size_t j = 0; j < length; j++) {
       buffer.push_back(dist(gen));
     }
 
-    out.write(
-        reinterpret_cast<const char *>(buffer.data()),
-        buffer.size() * sizeof(int64_t)
-    );
+    out.write(reinterpret_cast<const char *>(buffer.data()), buffer.size() * sizeof(int64_t));
     escritos += length;
   }
 
@@ -53,24 +50,26 @@ void generateSequences(int64_t N, const std::string &filename) {
   }
 
   std::ofstream salida(filename, std::ios::binary);
-  std::vector<int64_t> buffer;
-  buffer.reserve(BufferSize);
+
+  const size_t chunkSizePerFile = BufferSize / 5; // ~1MB por archivo
+  std::vector<int64_t> tempBuffer(chunkSizePerFile);
+  std::vector<int64_t> mezclaBuffer;
+  mezclaBuffer.reserve(BufferSize);
 
   size_t leidos = 0;
   while (leidos < totalEnteros) {
-    buffer.clear();
+    mezclaBuffer.clear();
 
     for (auto& in : entradas) {
-      size_t porLeer = std::min(BufferSize / 5, static_cast<size_t>(totalEnteros - leidos));
-      std::vector<int64_t> tempBuffer(porLeer);
+      size_t porLeer = std::min(chunkSizePerFile, static_cast<size_t>(totalEnteros - leidos));
       in.read(reinterpret_cast<char *>(tempBuffer.data()), porLeer * sizeof(int64_t));
       size_t leidoReal = in.gcount() / sizeof(int64_t);
-      buffer.insert(buffer.end(), tempBuffer.begin(), tempBuffer.begin() + leidoReal);
+      mezclaBuffer.insert(mezclaBuffer.end(), tempBuffer.begin(), tempBuffer.begin() + leidoReal);
       leidos += leidoReal;
     }
 
-    std::shuffle(buffer.begin(), buffer.end(), gen);
-    salida.write(reinterpret_cast<const char *>(buffer.data()), buffer.size() * sizeof(int64_t));
+    std::shuffle(mezclaBuffer.begin(), mezclaBuffer.end(), gen);
+    salida.write(reinterpret_cast<const char *>(mezclaBuffer.data()), mezclaBuffer.size() * sizeof(int64_t));
   }
 
   salida.close();
