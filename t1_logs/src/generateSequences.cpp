@@ -32,7 +32,7 @@ void generateSequences(int64_t N, const std::string &filename) {
   size_t escritos = 0;
   while (escritos < porSecuencia) {
     buffer.clear();
-    size_t length = std::min(BufferSize, porSecuencia - escritos);
+    size_t length = std::min(BufferSize, static_cast<size_t>(porSecuencia - escritos));
     for (size_t i = 0; i < length; i++) {
       buffer.push_back(dist(gen));
     }
@@ -61,7 +61,7 @@ void generateSequences(int64_t N, const std::string &filename) {
     buffer.clear();
 
     for (auto& in : entradas) {
-      size_t porLeer = std::min(BufferSize / 5, totalEnteros - leidos);
+      size_t porLeer = std::min(BufferSize / 5, static_cast<size_t>(totalEnteros - leidos));
       std::vector<int64_t> tempBuffer(porLeer);
       in.read(reinterpret_cast<char *>(tempBuffer.data()), porLeer * sizeof(int64_t));
       size_t leidoReal = in.gcount() / sizeof(int64_t);
@@ -89,10 +89,10 @@ int main() {
     const size_t MB = 50 * 1024 * 1024;
 
     for (int i = 0; i < 5; i++) {
-      size_t total_bytes = 60 * MB;
+      size_t total_bytes = 4 * MB;
       //std::string nombre = "datos_" + std::to_string(60) + "M.bin";
       char nombre[64];
-      sprintf(nombre, "datos_60M_%d.bin", i);
+      snprintf(nombre, sizeof(nombre), "datos_4M_%d.bin", i);
       generateSequences(total_bytes, nombre);
     }
     //for (int m = 4; m <= 60; m += 4) {
