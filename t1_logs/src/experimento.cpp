@@ -14,7 +14,7 @@ int main()
             i++;
             size_t total_bytes = m * MB;
             char nombre[64];
-            sprintf(nombre, "datos_%dM_%d.bin", m, i);
+            snprintf(nombre, sizeof(nombre),"datos_%dM_%d.bin", m, i);
             generateSequences(total_bytes, nombre);
             lecturas_escrituras = 0;
 
@@ -60,8 +60,5 @@ int main()
             }
            
     }
-    
-    
-    
     return 0;
 }

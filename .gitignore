@@ -3,3 +3,4 @@
 *.ilk
 *.pdb
 build
+*.DS_Store
