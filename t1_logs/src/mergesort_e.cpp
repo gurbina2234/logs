@@ -73,7 +73,7 @@ void generar_middle_files(char *datos_desordenados, size_t *cantidad_mid_files) 
         qsort(buffer, total_leidos, sizeof(int64_t), comparar_64); //ordeno en ram
 
         char nombre_mid[64];
-        sprintf(nombre_mid, "mid_%zu.bin", mid_num++);
+        snprintf(nombre_mid, sizeof(nombre_mid), "mid_%zu.bin", mid_num++);
         FILE *f_out = fopen(nombre_mid,"wb");
         if (!f_out) {
             perror("crear mid");
@@ -158,7 +158,7 @@ void merge_tanda(int inicio, int cantidad, const char* nombre_salida) {
     for (int i = 0; i < cantidad; i++) {
         int idx_archivo = inicio + i;
         char nombre_archivo[64];
-        sprintf(nombre_archivo, "mid_%d.bin", idx_archivo);
+        snprintf(nombre_archivo, sizeof(nombre_archivo), "mid_%d.bin", idx_archivo);
 
         mids[i].archivo = fopen(nombre_archivo, "rb");
         if (!mids[i].archivo) {
@@ -218,7 +218,7 @@ void merge_cant_sobre_a(size_t cantidad, int cuociente, int residuo, int cuantos
         *cantidadSupMid = cuociente + (residuo > 0);
         int offset = index * ARIDAD;
         char nombre_salida[64];
-        sprintf(nombre_salida, "superior_mid_%dM_%d.bin", cuantosM, index);
+        snprintf(nombre_salida, sizeof(nombre_salida), "superior_mid_%dM_%d.bin", cuantosM, index);
 
         merge_tanda(offset, ARIDAD, nombre_salida);
     }
@@ -226,7 +226,7 @@ void merge_cant_sobre_a(size_t cantidad, int cuociente, int residuo, int cuantos
     if (residuo > 0) {
         int offset = cuociente * ARIDAD;
         char nombre_salida[64];
-        sprintf(nombre_salida, "superior_mid_%dM_%d.bin", cuantosM, cuociente);
+        snprintf(nombre_salida, sizeof(nombre_salida), "superior_mid_%dM_%d.bin", cuantosM, cuociente);
 
         merge_tanda(offset, residuo, nombre_salida);
     }
@@ -237,7 +237,7 @@ void merge_cant_sobre_a(size_t cantidad, int cuociente, int residuo, int cuantos
 
     for (int i = 0; i < (cuociente + (residuo > 0)); i++) {
         char nombre_superior_mid[64];
-        sprintf(nombre_superior_mid, "superior_mid_%dM_%d.bin", cuantosM,i);
+        snprintf(nombre_superior_mid, sizeof(nombre_superior_mid), "superior_mid_%dM_%d.bin", cuantosM, i);
         sup_mids[i].archivo = fopen(nombre_superior_mid, "rb");
         if (!sup_mids[i].archivo) {
             perror("abrir superior mid");
@@ -247,8 +247,7 @@ void merge_cant_sobre_a(size_t cantidad, int cuociente, int residuo, int cuantos
     }
 
     char nombre_archivo_ordenado[64];
-    sprintf(nombre_archivo_ordenado, "orden_%dM_%d.bin", cuantosM, iteracion);
-    FILE *f_out = fopen(nombre_archivo_ordenado, "wb");
+    snprintf(nombre_archivo_ordenado, sizeof(nombre_archivo_ordenado), "orden_%dM_%d.bin", cuantosM, iteracion);    FILE *f_out = fopen(nombre_archivo_ordenado, "wb");
     if (!f_out) {
         perror("crear orden final");
         exit(1);
@@ -301,7 +300,7 @@ void merge_middle_files(size_t cantidad, int cuantosM, int *cantidadSupMid, int 
 
     for (int i = 0; i < cantidad; i++) {
         char nombre_mid[64];
-        sprintf(nombre_mid, "mid_%d.bin", i);
+        snprintf(nombre_mid, sizeof(nombre_mid), "mid_%d.bin", i);
         mids[i].archivo = fopen(nombre_mid, "rb");
         if (!mids[i].archivo) {
             perror("abrir mid file");
@@ -311,8 +310,7 @@ void merge_middle_files(size_t cantidad, int cuantosM, int *cantidadSupMid, int 
     }
 
     char nombre_archivo_ordenado[64];
-    sprintf(nombre_archivo_ordenado, "orden_%dM_%d.bin", cuantosM, iteracion);
-    FILE *f_out = fopen(nombre_archivo_ordenado, "wb");
+    snprintf(nombre_archivo_ordenado, sizeof(nombre_archivo_ordenado), "orden_%dM_%d.bin", cuantosM, iteracion);    FILE *f_out = fopen(nombre_archivo_ordenado, "wb");
     if (!f_out) {
         perror("crear orden final");
         exit(1);
@@ -352,7 +350,7 @@ void merge_middle_files(size_t cantidad, int cuantosM, int *cantidadSupMid, int 
 void borrar_middle_files(size_t cantidad_mids, int cantidad_sup_mids, int cuantosM) {
     for (int i = 0; i < cantidad_mids; i++) {
         char nombre_mid[64];
-        sprintf(nombre_mid, "mid_%d.bin", i);
+        snprintf(nombre_mid, sizeof(nombre_mid), "mid_%d.bin", i);
         if (remove(nombre_mid) != 0) {
             perror("borrar mid file");
             exit(1);
@@ -360,8 +358,7 @@ void borrar_middle_files(size_t cantidad_mids, int cantidad_sup_mids, int cuanto
     }
     for (int i = 0; i < cantidad_sup_mids; i++) {
         char nombre_sup_mid[64];
-        sprintf(nombre_sup_mid, "superior_mid_%dM_%d.bin", cuantosM, i);
-        if (remove(nombre_sup_mid) != 0) {
+        snprintf(nombre_sup_mid, sizeof(nombre_sup_mid), "superior_mid_%dM_%d.bin", cuantosM, i);        if (remove(nombre_sup_mid) != 0) {
             perror("borrar superior mid file");
             exit(1);
         }
