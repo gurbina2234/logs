@@ -16,7 +16,7 @@
 #define NUMS_POR_BLOQUE (B_BYTES / sizeof(int64_t)) // Cantidad de números por bloque (512)
 #define BLOQUES_EN_RAM (RESERVA_RAM / B_BYTES)      // Número de bloques que caben en RAM
 #define NUMS_EN_RAM (BLOQUES_EN_RAM * NUMS_POR_BLOQUE) // Números totales que caben en RAM
-#define ARIDAD 32                            // Aridad del merge (archivos a fusionar simultáneamente)
+#define ARIDAD 192                            // Aridad del merge (archivos a fusionar simultáneamente)
 
 /**
  * Estructura que representa un archivo intermedio (mid file)

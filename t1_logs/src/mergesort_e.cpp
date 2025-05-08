@@ -19,17 +19,6 @@
 // Contador global de operaciones de lectura/escritura para medir rendimiento
 size_t lecturas_escrituras = 0;
 
-/**
- * Estructura que representa un archivo intermedio (mid file)
- * Contiene un buffer para almacenar un bloque de datos y metadatos para su procesamiento
- */
-typedef struct {
-    FILE* archivo; //mid_#.bin
-    int64_t buffer[NUMS_POR_BLOQUE]; //buffer de 1 bloque
-    size_t pos = 0; //posicion actual dentro del buffer
-    size_t usados = 0;
-    bool terminado = false;
-} Mid;
 
 /**
  * Función de comparación para qsort
