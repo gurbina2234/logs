@@ -209,12 +209,12 @@ int main() {
           size_t MB = 50 * 1024 * 1024;
           size_t Nbytes = 60 * MB;
           size_t N = Nbytes / sizeof(int64_t);  
-          auto start = std::chrono::high_resolution_clock::now();
+          clock_t inicio = clock();
           quicksortExternal(filename, filenameSorted, N);
-          auto end = std::chrono::high_resolution_clock::now();
-          std::chrono::duration<double> elapsed = end - start;
+          clock_t fin = clock();
+          double segundos = (double)(fin - inicio) / CLOCKS_PER_SEC;
           std::cout << "Cantidad de Read y Writes: " << readnwrite << std::endl;
-          std::cout << "Tiempo total: " << elapsed.count() << " segundos." << std::endl;
+          std::cout << "Tiempo total: " << segundos << " segundos." << std::endl;
           std::cout << "Proxima iteracion: " << i+1 << std::endl;
           std::cout << "----------------------------------------\n" << std::endl;
      }
