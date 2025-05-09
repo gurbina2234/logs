@@ -8,7 +8,7 @@
 
 size_t B = 4096; 
 size_t blockSize = B / sizeof(int64_t);
-size_t M = (50 * 1024 * 1024) / sizeof(int64_t);
+size_t M = (48 * 1024 * 1024) / sizeof(int64_t);
 size_t blocksMemory = (M + blockSize - 1) / blockSize;
 size_t a = 192;
 
@@ -57,7 +57,6 @@ void writeBlock(const std::string &filename, size_t posicion, std::vector<int64_
 }
  
 std::vector<int64_t> randomInterval(const std::string &filename, size_t N) {
-     std::vector<int64_t> buffer;
      size_t numBlocks = (N + blockSize - 1) / blockSize;
      size_t numPivots = a - 1;
      // crear intentos para evitar que se tenga un set de pivotes incorrecto

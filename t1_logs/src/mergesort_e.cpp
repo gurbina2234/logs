@@ -6,32 +6,7 @@
 #include <vector>
 #include "mergesort_e.hpp"
 #include "IOs.hpp"
-
-/**
- * CONSTANTES DE CONFIGURACIÓN
- */
-#define B_BYTES 4096 //tamaño bloque
-#define M_BYTES (50 * 1024 * 1024) //tamaño RAM
-#define RESERVA_RAM (48 * 1024 * 1024) //tamaño de RAM a reservar
-#define NUMS_POR_BLOQUE (B_BYTES / sizeof(int64_t)) // = 512 | cant de numeros por bloque
-#define BLOQUES_EN_RAM (RESERVA_RAM / B_BYTES) //numero de bloques posibles en RAM (con reserva)
-#define NUMS_EN_RAM (BLOQUES_EN_RAM * NUMS_POR_BLOQUE) // = 6.291.456 numeros
-#define ARIDAD 192 //aridad (numero de archivos a mergear)
-
-
-/**
- * Función de comparación para qsort
- * Compara dos números de 64 bits para determinar su orden
- * @param a Puntero al primer número
- * @param b Puntero al segundo número
- * @return 1 si a>b, -1 si a<b, 0 si son iguales
- */
-int comparar_64(const void *a, const void *b) {
-    int64_t x = *(int64_t*)a;
-    int64_t y = *(int64_t*)b;
-    
-    return (x > y) - (x < y);
-}
+#include <algorithm> // Necesario para std::sort
 
 /**
  * Primera fase del algoritmo: divide el archivo grande en archivos intermedios ordenados
@@ -69,7 +44,7 @@ void generar_middle_files(char *datos_desordenados, size_t *cantidad_mid_files) 
 
         if (total_leidos == 0) break; //no se leyo ningun bloque
 
-        qsort(buffer, total_leidos, sizeof(int64_t), comparar_64); //ordeno en ram
+        std::sort(buffer, buffer + total_leidos);
 
         char nombre_mid[64];
         snprintf(nombre_mid, sizeof(nombre_mid), "mid_%zu.bin", mid_num++);
