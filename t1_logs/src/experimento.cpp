@@ -31,15 +31,14 @@ int main()
 
             auto fin_m = std::chrono::high_resolution_clock::now();
             std::chrono::duration<double> duracion_m = fin_m - inicio_m;
-            
-            printf("\nArchivo ordenado: orden_%dM_%d.bin\n", m, i);
+            char nombreOrdenado[64];
+            snprintf(nombreOrdenado, sizeof(nombreOrdenado),"orden_%dM_%d.bin", m, i);
+            printf("\nArchivo ordenado: %s\n", nombreOrdenado);
             printf("Tiempo total: %.2f segundos\n", duracion_m.count());
             printf("Total I/Os (lecturas + escrituras de bloques): %zu\n", lecturas_escrituras);
             
-            printf("Borrando middle files antes de comenzar denuevo...");
             borrar_middle_files(cantidad_mids, cantidadSupMids, m);
-            printf("Comenzando siguiente iteracion.");
-
+            std::remove(nombreOrdenado);
             std::cout << "----------------------------------------\n" << std::endl;
             std::cout << "QUICKSORT" << std::endl;
           
@@ -60,7 +59,12 @@ int main()
             printf("Tiempo total: %.2f segundos\n", duracion_q.count());
             std::cout << "Proxima iteracion: " << i+1 << std::endl;
             std::cout << "----------------------------------------\n" << std::endl;
-            i--; 
+            
+            std::cout << "Borrando archivos" << std::endl;
+            std::remove(nombre);
+            std::remove(filenameSorted.c_str());
+            i--;
+            
             }
            
     }
