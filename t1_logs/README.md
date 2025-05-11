@@ -6,6 +6,29 @@ Este repositorio contiene implementaciones de algoritmos de ordenamiento externo
 - **QuickSort Externo**: Una adaptación del algoritmo QuickSort clásico para trabajar con archivos en disco.
 - **MergeSort Externo**: Una implementación del algoritmo MergeSort adaptada para trabajar con archivos en disco.
 
+## Estructura del Proyecto
+
+```
+.
+├── CMakeLists.txt
+├── Makefile
+├── README.md
+├── estructura.txt
+├── include
+│   ├── IOs.hpp
+│   ├── generateSequences.hpp
+│   ├── mergesort_e.hpp
+│   └── quicksort_e.hpp
+└── src
+    ├── experimento.cpp
+    ├── generateSequences.cpp
+    ├── mergesort_e.cpp
+    ├── programa
+    └── quicksort_e.cpp
+
+3 directories, 13 files
+
+```
 ## Componentes Principales
 
 ### QuickSort Externo
@@ -230,11 +253,37 @@ int main() {
     return 0;
 }
 ```
+## Compilación
+### Compilar el proyecto
+Se debe compilar en un contenedor de Docker en `t1_logs` usando un límite de memoria 500MB.
 
-## Conclusión
+```
+docker run --rm -it -m 500m -v "$PWD":/workspace pabloskewes/cc4102-cpp-env bash
+```
+Luego dentro del contenedor, se debe realizar lo siguiente para crear el ejecutable `./ExpSort`.
 
-Estos algoritmos de ordenamiento externo proporcionan soluciones eficientes para ordenar grandes volúmenes de datos que no caben en memoria. La implementación está optimizada para minimizar las operaciones de I/O y hacer un uso eficiente de la memoria disponible.
+````
+mkdir build
+cd build
+cmake ..
+cmake --build .
+````
+En caso de que `cmake`no esté instalado dentro del contenedor, se debe instalar lo siguiente:
 
-El QuickSort Externo es particularmente eficiente cuando los pivotes seleccionados distribuyen bien los datos, mientras que el MergeSort Externo ofrece un rendimiento más predecible independientemente de la distribución de los datos.
+````
+apt update
+apt install -y cmake
+````
+### Ejecutar el experimento
+Se debe ejecutar en un contenedor de Docker  en `t1_logs` usando un límite de memoria 50MB.
 
-Ambos algoritmos son escalables y pueden manejar archivos de varios gigabytes con un uso de memoria limitado, lo que los hace ideales para aplicaciones con restricciones de recursos.
+```
+docker run --rm -it -m 500m -v "$PWD":/workspace pabloskewes/cc4102-cpp-env bash
+```
+
+Luego dentro del contenedor, se debe realizar lo siguiente para ejecutar los experimentos.
+
+````
+cd build 
+./ExpSort
+````
