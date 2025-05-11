@@ -7,6 +7,18 @@
 #include <vector>
 
 /**
+ * @brief Imprime una barra de progreso en la consola
+ *
+ * Esta función imprime una barra de progreso en la consola para
+ * mostrar el avance de la clasificacion de datos en subarreglos (archivos binarios).
+ * Se crea para ver el progreso de archivos grandes, ya que tarda mucho la funcion.
+ *
+ * @param current Valor actual del progreso
+ * @param total Valor total del progreso
+ * @param width Ancho de la barra de progreso (por defecto 50)
+ */
+void printProgressBar(size_t current, size_t total, size_t width = 50);
+/**
  * @brief Lee un bloque de datos desde un archivo binario
  *
  * Esta función lee un bloque de tamaño fijo desde una posición específica

@@ -5,6 +5,7 @@
 #include <random>
 #include <set>
 #include <IOs.hpp>
+#include <iomanip>
 
 size_t B = 4096; 
 size_t blockSize = B / sizeof(int64_t);
@@ -12,6 +13,18 @@ size_t M = (48 * 1024 * 1024) / sizeof(int64_t);
 size_t blocksMemory = (M + blockSize - 1) / blockSize;
 size_t a = 192;
 
+void printProgressBar(size_t current, size_t total, size_t width = 50) {
+     float ratio = static_cast<float>(current) / total;
+     size_t filled = static_cast<size_t>(ratio * width);
+ 
+     std::cout << "\r[";
+     for (size_t i = 0; i < filled; ++i) std::cout << "#";
+     for (size_t i = filled; i < width; ++i) std::cout << " ";
+     std::cout << "] " << std::fixed << std::setprecision(1) << (ratio * 100.0) << "%";
+     std::cout.flush();
+}
+
+ 
 void readBlock(const std::string &filename, size_t posicion, std::vector<int64_t> &buffer) {
      std::ifstream file(filename, std::ios::binary);
      if (!file) {
@@ -31,6 +44,7 @@ void readBlock(const std::string &filename, size_t posicion, std::vector<int64_t
  
  
 void writeBlock(const std::string &filename, size_t posicion, std::vector<int64_t> &buffer) {
+     if (buffer.empty()) return;
      std::fstream file(filename, std::ios::binary | std::ios::in | std::ios::out); // poner ios in y ios out sino se puede reescribir todo el archivo
      if (!file.is_open()) {
           //crear achivo vacio
@@ -125,6 +139,7 @@ void quicksortExternal(const std::string &filename, const std::string &filenameS
      size_t numBlocks = (N + blockSize - 1) / blockSize;
      if (N <= M) {
           std::vector<int64_t> uploadMemory;
+          uploadMemory.reserve(N); // reservar espacio para el buffer
           readAllMemory(filename, 0, numBlocks, uploadMemory);
           std::sort(uploadMemory.begin(), uploadMemory.end());
           for(size_t i = 0; i < numBlocks; ++i) {
@@ -138,8 +153,13 @@ void quicksortExternal(const std::string &filename, const std::string &filenameS
      std::vector<int64_t> pivots = randomInterval(filename, N);
      std::vector<std::vector<int64_t>> subArrays(a);
      std::vector<size_t> blockCounters(a, 0);
-     for (size_t i = 0; i < numBlocks; i += blocksMemory) {
+     std::cout << "CLASIFICANDO EN SUBARREGLOS" << std::endl;
+     size_t totalSteps = (numBlocks + blocksMemory - 1) / blocksMemory;
+     size_t step = 0;
+     for (size_t i = 0; i < numBlocks; i += blocksMemory, ++step) {
+          printProgressBar(step, totalSteps);
           std::vector<int64_t> memoryBuffer;
+          memoryBuffer.reserve(M);
           size_t blockstoRead = std::min(blocksMemory, numBlocks - i);
           //leer bloques en memoria principal
           readAllMemory(filename, i, blockstoRead, memoryBuffer);
@@ -161,6 +181,7 @@ void quicksortExternal(const std::string &filename, const std::string &filenameS
           }
 
      }
+     printProgressBar(totalSteps, totalSteps);
      //escribir los bloques restantes incompletos
      for (size_t j = 0; j < a; ++j) {
           if (!subArrays[j].empty()) {
@@ -171,7 +192,6 @@ void quicksortExternal(const std::string &filename, const std::string &filenameS
      }
      //llamar recursivamente por cada subarreglo (subarchivo)
      //guarda el tamaño de los subarreglos
-     std::vector<size_t> numElements(a);
      for (size_t i = 0; i < a; ++i){
           //abre el archivo del subarreglo 
           std::string subFilename = "temp_" + std::to_string(depth) + "_p" + std::to_string(i) + ".bin";
@@ -183,13 +203,14 @@ void quicksortExternal(const std::string &filename, const std::string &filenameS
           size_t sizeBytes = in.tellg();
           if (sizeBytes == 0) {
                std::cerr << subFilename << " está vacío, se omite.\n";
-               in.close();
+               std::remove(subFilename.c_str()); 
                continue;
           } 
-          numElements[i] = sizeBytes / sizeof(int64_t);
+          size_t subSize = sizeBytes / sizeof(int64_t);
           in.close();
-          quicksortExternal(subFilename, subFilename, numElements[i], depth + 1);
+          quicksortExternal(subFilename, subFilename, subSize, depth + 1);
      }
+     std::cout << "MERGE" << std::endl;
      mergeFiles(filenameSorted, N, depth);
      return;
 } 

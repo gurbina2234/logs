@@ -22,8 +22,8 @@ int main()
 
             size_t cantidad_mids = 0;
             int cantidadSupMids = 0;
-            printf("Comienzo con el archivo: %s\n", nombre);
             std::cout << "MERGESORT" << std::endl;
+            printf("Comienzo con el archivo: %s\n", nombre);
             auto inicio_m = std::chrono::high_resolution_clock::now();
 
             generar_middle_files(nombre, &cantidad_mids);
@@ -33,7 +33,7 @@ int main()
             std::chrono::duration<double> duracion_m = fin_m - inicio_m;
             char nombreOrdenado[64];
             snprintf(nombreOrdenado, sizeof(nombreOrdenado),"orden_%dM_%d.bin", m, i);
-            printf("\nArchivo ordenado: %s\n", nombreOrdenado);
+            //printf("\nArchivo ordenado: %s\n", nombreOrdenado);
             printf("Tiempo total: %.2f segundos\n", duracion_m.count());
             printf("Total I/Os (lecturas + escrituras de bloques): %zu\n", lecturas_escrituras);
             
@@ -55,12 +55,12 @@ int main()
 
             auto fin_q = std::chrono::high_resolution_clock::now();
             std::chrono::duration<double> duracion_q = fin_q - inicio_q;
-            std::cout << "Cantidad de Read y Writes: " << lecturas_escrituras << std::endl;
             printf("Tiempo total: %.2f segundos\n", duracion_q.count());
-            std::cout << "Proxima iteracion: " << i+1 << std::endl;
+            std::cout << "Total I/Os (lecturas + escrituras de bloques): " << lecturas_escrituras << std::endl;
             std::cout << "----------------------------------------\n" << std::endl;
             
             std::cout << "Borrando archivos" << std::endl;
+            std::cout << "----------------------------------------\n" << std::endl;
             std::remove(nombre);
             std::remove(filenameSorted.c_str());
             i--;
