@@ -73,7 +73,6 @@ void writeBlock(const std::string &filename, size_t posicion, std::vector<int64_
 std::vector<int64_t> randomInterval(const std::string &filename, size_t N) {
      size_t numBlocks = (N + blockSize - 1) / blockSize;
      size_t numPivots = a - 1;
-     // crear intentos para evitar que se tenga un set de pivotes incorrecto
      std::set<int64_t> candidates;
      size_t randomBlock = rand() % numBlocks;
      std::vector<int64_t> tempBuffer;
@@ -152,10 +151,10 @@ void quicksortExternal(const std::string &filename, const std::string &filenameS
      }
      std::vector<int64_t> pivots = randomInterval(filename, N);
      std::vector<std::vector<int64_t>> subArrays(a);
-     std::vector<size_t> blockCounters(a, 0);
+     std::vector<size_t> blockCounters(a, 0); //contador de bloques para cada subarreglo
      std::cout << "CLASIFICANDO EN SUBARREGLOS" << std::endl;
      size_t totalSteps = (numBlocks + blocksMemory - 1) / blocksMemory;
-     size_t step = 0;
+     size_t step = 0; //barra de progreso
      for (size_t i = 0; i < numBlocks; i += blocksMemory, ++step) {
           printProgressBar(step, totalSteps);
           std::vector<int64_t> memoryBuffer;
@@ -191,7 +190,6 @@ void quicksortExternal(const std::string &filename, const std::string &filenameS
           }
      }
      //llamar recursivamente por cada subarreglo (subarchivo)
-     //guarda el tamaño de los subarreglos
      for (size_t i = 0; i < a; ++i){
           //abre el archivo del subarreglo 
           std::string subFilename = "temp_" + std::to_string(depth) + "_p" + std::to_string(i) + ".bin";
