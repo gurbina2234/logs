@@ -278,7 +278,7 @@ apt install -y cmake
 Se debe ejecutar en un contenedor de Docker  en `t1_logs` usando un límite de memoria 50MB.
 
 ```
-docker run --rm -it -m 50m -v "$PWD":/workspace pabloskewes/cc4102-cpp-env bash
+docker run --rm -it -m 500m -v "$PWD":/workspace pabloskewes/cc4102-cpp-env bash
 ```
 
 Luego dentro del contenedor, se debe realizar lo siguiente para ejecutar los experimentos.
