@@ -13,7 +13,7 @@ size_t M = (48 * 1024 * 1024) / sizeof(int64_t);
 size_t blocksMemory = (M + blockSize - 1) / blockSize;
 size_t a = 192;
 
-void printProgressBar(size_t current, size_t total, size_t width = 50) {
+void printProgressBar(size_t current, size_t total, size_t width) {
      float ratio = static_cast<float>(current) / total;
      size_t filled = static_cast<size_t>(ratio * width);
  
