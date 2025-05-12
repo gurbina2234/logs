@@ -1,20 +1,21 @@
 #include "../include/generateSequences.hpp"
 #include <algorithm>
-#include <fstream>
 #include <cstdlib>
-#include <random>
-#include <vector>
-#include <string>
+#include <fstream>
 #include <iostream>
+#include <random>
+#include <string>
+#include <vector>
 
 void generateSequences(int64_t N, const std::string &filename) {
-  //Definición de tamaño de buffer
+  // Definición de tamaño de buffer
   const size_t BufferMB = 5;
   const size_t BufferSize = (BufferMB * 1024 * 1024) / sizeof(int64_t);
   int64_t totalEnteros = N / sizeof(int64_t);
   int64_t porSecuencia = totalEnteros / 5;
 
-  // Se crean 5 archivos temporales para almacenar secuencias y despues escribirlas en los archivos reales
+  // Se crean 5 archivos temporales para almacenar secuencias y despues
+  // escribirlas en los archivos reales
   std::vector<std::string> temp = {
       "temp1.bin", "temp2.bin", "temp3.bin", "temp4.bin", "temp5.bin"
   };
@@ -29,19 +30,23 @@ void generateSequences(int64_t N, const std::string &filename) {
     std::vector<int64_t> buffer;
     buffer.reserve(BufferSize);
 
-  size_t escritos = 0;
-  while (escritos < porSecuencia) {
-    buffer.clear();
-    size_t length = std::min(BufferSize, static_cast<size_t>(porSecuencia - escritos));
-    for (size_t j = 0; j < length; j++) {
-      buffer.push_back(dist(gen));
+    size_t escritos = 0;
+    while (escritos < porSecuencia) {
+      buffer.clear();
+      size_t length =
+          std::min(BufferSize, static_cast<size_t>(porSecuencia - escritos));
+      for (size_t j = 0; j < length; j++) {
+        buffer.push_back(dist(gen));
+      }
+
+      out.write(
+          reinterpret_cast<const char *>(buffer.data()),
+          buffer.size() * sizeof(int64_t)
+      );
+      escritos += length;
     }
 
-    out.write(reinterpret_cast<const char *>(buffer.data()), buffer.size() * sizeof(int64_t));
-    escritos += length;
-  }
-
-  out.close();
+    out.close();
   }
 
   std::vector<std::ifstream> entradas;
@@ -60,16 +65,25 @@ void generateSequences(int64_t N, const std::string &filename) {
   while (leidos < totalEnteros) {
     mezclaBuffer.clear();
 
-    for (auto& in : entradas) {
-      size_t porLeer = std::min(chunkSizePerFile, static_cast<size_t>(totalEnteros - leidos));
-      in.read(reinterpret_cast<char *>(tempBuffer.data()), porLeer * sizeof(int64_t));
+    for (auto &in : entradas) {
+      size_t porLeer = std::min(
+          chunkSizePerFile, static_cast<size_t>(totalEnteros - leidos)
+      );
+      in.read(
+          reinterpret_cast<char *>(tempBuffer.data()), porLeer * sizeof(int64_t)
+      );
       size_t leidoReal = in.gcount() / sizeof(int64_t);
-      mezclaBuffer.insert(mezclaBuffer.end(), tempBuffer.begin(), tempBuffer.begin() + leidoReal);
+      mezclaBuffer.insert(
+          mezclaBuffer.end(), tempBuffer.begin(), tempBuffer.begin() + leidoReal
+      );
       leidos += leidoReal;
     }
 
     std::shuffle(mezclaBuffer.begin(), mezclaBuffer.end(), gen);
-    salida.write(reinterpret_cast<const char *>(mezclaBuffer.data()), mezclaBuffer.size() * sizeof(int64_t));
+    salida.write(
+        reinterpret_cast<const char *>(mezclaBuffer.data()),
+        mezclaBuffer.size() * sizeof(int64_t)
+    );
   }
 
   salida.close();
@@ -77,11 +91,12 @@ void generateSequences(int64_t N, const std::string &filename) {
     in.close();
   }
 
-  for (const auto& f : temp) {
+  for (const auto &f : temp) {
     std::remove(f.c_str());
   }
 
-  std::cout << "Archivo generado: " << filename << " (" << totalEnteros << " enteros, " << N / (1024 * 1024) << " MB)" << std::endl;
+  std::cout << "Archivo generado: " << filename << " (" << totalEnteros
+            << " enteros, " << N / (1024 * 1024) << " MB)" << std::endl;
 }
 
 // int main() {

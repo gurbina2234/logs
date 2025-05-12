@@ -3,7 +3,8 @@
 
 /**
  * Contador de operaciones I/O
- * Se utiliza para llevar un registro de la cantidad de lecturas y escrituras realizadas
+ * Se utiliza para llevar un registro de la cantidad de lecturas y escrituras
+ * realizadas
  */
 extern size_t lecturas_escrituras;
 

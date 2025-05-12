@@ -10,8 +10,9 @@
  * @brief Imprime una barra de progreso en la consola
  *
  * Esta función imprime una barra de progreso en la consola para
- * mostrar el avance de la clasificacion de datos en subarreglos (archivos binarios).
- * Se crea para ver el progreso de archivos grandes, ya que tarda mucho la funcion.
+ * mostrar el avance de la clasificacion de datos en subarreglos (archivos
+ * binarios). Se crea para ver el progreso de archivos grandes, ya que tarda
+ * mucho la funcion.
  *
  * @param current Valor actual del progreso
  * @param total Valor total del progreso
@@ -28,7 +29,11 @@ void printProgressBar(size_t current, size_t total, size_t width = 50);
  * @param posicion Índice del bloque a leer
  * @param buffer Vector donde se almacenarán los datos leídos
  */
-void readBlock(const std::string &filename, size_t posicion, std::vector<int64_t> &buffer);
+void readBlock(
+    const std::string &filename,
+    size_t posicion,
+    std::vector<int64_t> &buffer
+);
 
 /**
  * @brief Escribe un bloque de datos en un archivo binario
@@ -40,10 +45,15 @@ void readBlock(const std::string &filename, size_t posicion, std::vector<int64_t
  * @param posicion Índice del bloque donde se escribirá
  * @param buffer Vector que contiene los datos a escribir
  */
-void writeBlock(const std::string &filename, size_t posicion, std::vector<int64_t> &buffer);
+void writeBlock(
+    const std::string &filename,
+    size_t posicion,
+    std::vector<int64_t> &buffer
+);
 
 /**
- * @brief Selecciona un conjunto de pivotes aleatorios en un bloque aleatorio de un archivo binario
+ * @brief Selecciona un conjunto de pivotes aleatorios en un bloque aleatorio de
+ * un archivo binario
  *
  * Esta función selecciona valores aleatorios desde un archivo binario
  * para usarlos como pivotes en el algoritmo de QuickSort externo.
@@ -65,7 +75,12 @@ std::vector<int64_t> randomInterval(const std::string &filename, size_t N);
  * @param numBlocks Número de bloques a leer
  * @param buffer Vector donde se almacenarán los datos leídos
  */
-void readAllMemory(const std::string &filename,size_t startBlock, size_t numBlocks, std::vector<int64_t> &buffer);
+void readAllMemory(
+    const std::string &filename,
+    size_t startBlock,
+    size_t numBlocks,
+    std::vector<int64_t> &buffer
+);
 
 /**
  * @brief Fusiona archivos temporales en un archivo ordenado
@@ -90,6 +105,11 @@ void mergeFiles(const std::string &filenameSorted, size_t N, size_t depth);
  * @param N Número total de elementos en el archivo
  * @param depth Nivel de profundidad en la recursión (por defecto 0)
  */
-void quicksortExternal(const std::string &filename, const std::string &filenameSorted, size_t N, size_t depth = 0);
+void quicksortExternal(
+    const std::string &filename,
+    const std::string &filenameSorted,
+    size_t N,
+    size_t depth = 0
+);
 
 #endif
